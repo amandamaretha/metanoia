@@ -277,6 +277,11 @@
                             value="{{ old('telepon') }}"
                             required
                         >
+                        @error('telepon')
+                            <p style="color: #c0392b; font-size: 13px; margin-top: 6px;">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     <div class="form-group">
