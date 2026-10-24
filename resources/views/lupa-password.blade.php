@@ -262,7 +262,7 @@
         <section class="right-panel">
 
             <header class="header">
-                <a href="{{ route('password.forgot') }}"
+                <a href="{{ url('/') }}"
                    class="back"
                    aria-label="Kembali ke halaman sebelumnya">
                     &#8592;
