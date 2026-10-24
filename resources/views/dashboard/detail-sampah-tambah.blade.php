@@ -100,9 +100,11 @@
 
                         <!-- Area Upload Gambar (Garis Putus-putus) -->
                         <div class="col-span-2 flex justify-center mt-6">
-                            <div class="w-[85%] h-48 border-[3px] border-dashed border-[#5C8A8A] bg-[#eef4f4] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-[#e4ecec] transition-colors relative">
+                            <div class="w-[85%] h-48 border-[3px] border-dashed border-[#5C8A8A] bg-[#eef4f4] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-[#e4ecec] transition-colors relative overflow-hidden">
                                 <!-- Input File tersembunyi -->
-                                <input type="file" id="inputFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                <input type="file" id="inputFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="image/*">
+
+                                <img id="imagePreview" alt="Pratinjau Gambar" class="hidden absolute inset-0 w-full h-full object-contain bg-[#eef4f4]">
 
                                 <div class="relative">
                                     <i class="fa-regular fa-image text-6xl text-[#5C8A8A]"></i>
@@ -136,6 +138,30 @@
 
     <!-- JAVASCRIPT LOGIKA SIMPAN KE LOKAL STORAGE -->
     <script>
+        let currentPreviewUrl = null;
+        const inputFile = document.getElementById('inputFile');
+        const imagePreview = document.getElementById('imagePreview');
+
+        if (inputFile && imagePreview) {
+            inputFile.addEventListener('change', function () {
+                const file = this.files && this.files[0];
+
+                if (currentPreviewUrl) {
+                    URL.revokeObjectURL(currentPreviewUrl);
+                    currentPreviewUrl = null;
+                }
+
+                if (file) {
+                    currentPreviewUrl = URL.createObjectURL(file);
+                    imagePreview.src = currentPreviewUrl;
+                    imagePreview.classList.remove('hidden');
+                } else {
+                    imagePreview.src = '';
+                    imagePreview.classList.add('hidden');
+                }
+            });
+        }
+
         function simpanProdukBaru() {
             let nama = document.getElementById('inputNama').value.trim();
             let deskripsi = document.getElementById('inputDeskripsi').value.trim();
