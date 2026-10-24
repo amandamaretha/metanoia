@@ -8,23 +8,46 @@ Route::get('/', function () {
     return view('login');
 });
 
-// Halaman login pengelola
-Route::get('/login/pengelola', function () {
-    return view('login-role', ['role' => 'Pengelola']);
-});
+// Halaman login role (Pengelola / Bendahara)
+Route::get('/login/{role}', function (string $role) {
+    $validRoles = [
+        config('metanoia.roles.pengelola'),
+        config('metanoia.roles.bendahara'),
+    ];
 
-// Halaman login bendahara
-Route::get('/login/bendahara', function () {
-    return view('login-role', ['role' => 'Bendahara']);
-});
+    abort_unless(in_array($role, $validRoles, true), 404);
+
+    return view('login-role', [
+        'role' => config("metanoia.role_labels.{$role}", ucfirst($role)),
+    ]);
+})->whereIn('role', [
+    config('metanoia.roles.pengelola'),
+    config('metanoia.roles.bendahara'),
+])->name('login.show');
 
 // ==========================================
 // KODE UNTUK TESTING (TANPA DATABASE) & DASHBOARD ROUTE
 // ==========================================
-// Proses login pengelola
-Route::post('/login/pengelola', function (Request $request) {
-    return redirect('/pengelola/dashboard');
-});
+// Proses login mock pengelola & bendahara
+Route::post('/login/{role}', function (Request $request, string $role) {
+    if ($role === config('metanoia.roles.pengelola')) {
+        return redirect('/pengelola/dashboard');
+    }
+
+    if ($role === config('metanoia.roles.bendahara')) {
+        $request->validate([
+            config('metanoia.columns.login', 'telepon') => 'required',
+            'password' => 'required',
+        ]);
+
+        return back()->with('success', 'Form login bendahara berhasil dikirim.');
+    }
+
+    abort(404);
+})->whereIn('role', [
+    config('metanoia.roles.pengelola'),
+    config('metanoia.roles.bendahara'),
+])->name('login.attempt');
 
 // Route Dashboard Pengelola (Folder: resources/views/dashboard/pengelola.blade.php)
 Route::get('/pengelola/dashboard', function () {
@@ -82,15 +105,6 @@ Route::get('/pengelola/penimbangan', function () {
 })->name('pengelola.penimbangan');
 // ==========================================
 
-// Proses login bendahara
-Route::post('/login/bendahara', function (Request $request) {
-    $request->validate([
-        'telepon' => 'required',
-        'password' => 'required',
-    ]);
-
-    return back()->with('success', 'Form login bendahara berhasil dikirim.');
-});
 
 Route::get('/lupa-password', function () {
     return view('lupa-password');
