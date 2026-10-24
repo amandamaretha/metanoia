@@ -139,7 +139,7 @@
                         <label class="w-1/3 text-gray-700 font-medium">Password</label>
                         <div class="w-2/3 flex items-center gap-3">
                             <!-- Input tipe text atau password, sementara dibiarkan text sesuai desain -->
-                            <input type="text" id="mainPasswordInput" value="Hafidh2345!" readonly class="border border-gray-300 bg-gray-50 rounded-md px-3 py-2 w-full max-w-md focus:outline-none cursor-not-allowed">
+                            <input type="text" id="mainPasswordInput" value="" readonly class="border border-gray-300 bg-gray-50 rounded-md px-3 py-2 w-full max-w-md focus:outline-none cursor-not-allowed">
                             <i onclick="openEditModal('password', 'Password')" class="fa-solid fa-pen text-gray-500 cursor-pointer hover:text-blue-500 transition-colors p-2"></i>
                         </div>
                     </div>
