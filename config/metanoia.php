@@ -42,13 +42,15 @@ return [
     | - ttl: masa berlaku kode dalam detik (300 detik = 5 menit).
     | - max_attempts: batas toleransi percobaan kode salah sebelum hangus.
     | - resend_cooldown: jeda minimal sebelum boleh meminta kirim ulang (60 detik).
+    | - max_failures_per_hour: batas toleransi salah verifikasi per jam sebelum akun terkunci.
     | - driver: driver pengiriman ('log' atau 'null').
     |
     */
     'otp' => [
-        'ttl'             => 300,
-        'max_attempts'    => 5,
-        'resend_cooldown' => 60,
-        'driver'          => env('OTP_DRIVER', 'log'),
+        'ttl'                   => 300,
+        'max_attempts'          => 5,
+        'resend_cooldown'       => 60,
+        'max_failures_per_hour' => 10, // Maksimal percobaan verifikasi salah per jam
+        'driver'                => env('OTP_DRIVER', 'log'),
     ],
 ];

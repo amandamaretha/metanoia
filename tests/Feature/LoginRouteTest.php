@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class LoginRouteTest extends TestCase
@@ -40,9 +41,8 @@ class LoginRouteTest extends TestCase
 
     /**
      * Pengujian sementara login pengelola dengan mock-auth sebelum migrasi penuh ke verifikasi OTP.
-     *
-     * @group mock-auth
      */
+    #[Group('mock-auth')]
     public function test_post_login_pengelola_redirect_ke_dashboard(): void
     {
         $response = $this->post(route('login.attempt', config('metanoia.portals.pengelola')));
