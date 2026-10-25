@@ -38,6 +38,11 @@ class LoginRouteTest extends TestCase
         $response->assertStatus(404);
     }
 
+    /**
+     * Pengujian sementara login pengelola dengan mock-auth sebelum migrasi penuh ke verifikasi OTP.
+     *
+     * @group mock-auth
+     */
     public function test_post_login_pengelola_redirect_ke_dashboard(): void
     {
         $response = $this->post(route('login.attempt', config('metanoia.portals.pengelola')));
