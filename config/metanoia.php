@@ -16,13 +16,6 @@ return [
         'nasabah'   => 'nasabah',
     ],
 
-    // Alias kompatibilitas
-    'roles' => [
-        'pengelola' => 'pengelola',
-        'bendahara' => 'bendahara',
-        'nasabah'   => 'nasabah',
-    ],
-
     /*
     |--------------------------------------------------------------------------
     | Label Tampilan Portal
@@ -34,22 +27,12 @@ return [
         'nasabah'   => 'Nasabah',
     ],
 
-    'role_labels' => [
-        'pengelola' => 'Pengelola',
-        'bendahara' => 'Bendahara',
-        'nasabah'   => 'Nasabah',
-    ],
-
     /*
     |--------------------------------------------------------------------------
     | Nama Field Telepon di Form
     |--------------------------------------------------------------------------
     */
     'phone_field' => 'telepon',
-
-    'columns' => [
-        'login' => 'telepon',
-    ],
 
     /*
     |--------------------------------------------------------------------------

@@ -104,7 +104,7 @@
                                 <!-- Input File tersembunyi -->
                                 <input type="file" id="inputFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="image/*">
 
-                                <img id="imagePreview" alt="Pratinjau Gambar" class="hidden absolute inset-0 w-full h-full object-contain bg-[#eef4f4]">
+                                <img id="imagePreview" alt="Pratinjau Gambar" class="hidden absolute inset-0 w-full h-full object-contain bg-[#eef4f4] z-[5]">
 
                                 <div class="relative">
                                     <i class="fa-regular fa-image text-6xl text-[#5C8A8A]"></i>

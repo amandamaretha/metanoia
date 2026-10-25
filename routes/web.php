@@ -10,19 +10,12 @@ Route::get('/', function () {
 
 // Halaman login role (Pengelola / Bendahara)
 Route::get('/login/{role}', function (string $role) {
-    $validRoles = [
-        config('metanoia.roles.pengelola'),
-        config('metanoia.roles.bendahara'),
-    ];
-
-    abort_unless(in_array($role, $validRoles, true), 404);
-
     return view('login-role', [
-        'role' => config("metanoia.role_labels.{$role}", ucfirst($role)),
+        'role' => config("metanoia.portal_labels.{$role}", ucfirst($role)),
     ]);
 })->whereIn('role', [
-    config('metanoia.roles.pengelola'),
-    config('metanoia.roles.bendahara'),
+    config('metanoia.portals.pengelola'),
+    config('metanoia.portals.bendahara'),
 ])->name('login.show');
 
 // ==========================================
@@ -30,13 +23,13 @@ Route::get('/login/{role}', function (string $role) {
 // ==========================================
 // Proses login mock pengelola & bendahara
 Route::post('/login/{role}', function (Request $request, string $role) {
-    if ($role === config('metanoia.roles.pengelola')) {
-        return redirect('/pengelola/dashboard');
+    if ($role === config('metanoia.portals.pengelola')) {
+        return redirect()->route('pengelola.dashboard');
     }
 
-    if ($role === config('metanoia.roles.bendahara')) {
+    if ($role === config('metanoia.portals.bendahara')) {
         $request->validate([
-            config('metanoia.columns.login', 'telepon') => 'required',
+            config('metanoia.phone_field', 'telepon') => 'required',
             'password' => 'required',
         ]);
 
@@ -45,8 +38,8 @@ Route::post('/login/{role}', function (Request $request, string $role) {
 
     abort(404);
 })->whereIn('role', [
-    config('metanoia.roles.pengelola'),
-    config('metanoia.roles.bendahara'),
+    config('metanoia.portals.pengelola'),
+    config('metanoia.portals.bendahara'),
 ])->name('login.attempt');
 
 // Route Dashboard Pengelola (Folder: resources/views/dashboard/pengelola.blade.php)
