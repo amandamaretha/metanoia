@@ -289,10 +289,28 @@
                   method="POST">
                 @csrf
 
+                @if (session('status'))
+                    <p style="color: #598b8b; margin-bottom: 15px; text-align: center;">
+                        {{ session('status') }}
+                    </p>
+                @endif
+
+                @if (session('error'))
+                    <p style="color: #c0392b; margin-bottom: 15px; text-align: center;">
+                        {{ session('error') }}
+                    </p>
+                @endif
+
+                @if (session('success'))
+                    <p style="color: #598b8b; margin-bottom: 15px; text-align: center;">
+                        {{ session('success') }}
+                    </p>
+                @endif
+
                 <p class="description">
                     Masukkan kode verifikasi yang telah dikirim ke nomor
                     <br>
-                    {{ session('telepon_masked', '08xx xxxx xx45') }}
+                    {{ session('reset.shown') }}
                 </p>
 
                 <div class="otp-container">
@@ -310,11 +328,15 @@
                     @endfor
                 </div>
 
-                @if ($errors->any())
-                    <p style="color: #c0392b; margin-top: 15px;">
+                @error('otp')
+                    <p style="color: #c0392b; margin-top: 15px; text-align: center;">
+                        {{ $message }}
+                    </p>
+                @elseif ($errors->any())
+                    <p style="color: #c0392b; margin-top: 15px; text-align: center;">
                         {{ $errors->first() }}
                     </p>
-                @endif
+                @enderror
 
                 <div class="button-area">
                     <button type="submit" class="btn-send">

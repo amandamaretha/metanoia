@@ -258,6 +258,12 @@
                     Silahkan masuk ke akun anda!
                 </p>
 
+                @if (session('success'))
+                    <p style="color: #27ae60; font-size: 13px; margin-bottom: 16px;">
+                        {{ session('success') }}
+                    </p>
+                @endif
+
                 <form
                     action="{{ $role === 'Pengelola'
                         ? url('/login/pengelola')
@@ -296,7 +302,7 @@
                         >
                     </div>
 
-                    <a href="{{ route('password.forgot') }}" class="forgot">
+                    <a href="{{ route('password.forgot', ['role' => array_search($role, config('metanoia.portal_labels', [])) ?: strtolower($role)]) }}" class="forgot">
                         Lupa password?
                     </a>
 
