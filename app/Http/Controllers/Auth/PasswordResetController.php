@@ -73,6 +73,10 @@ class PasswordResetController extends Controller
             return back()->withErrors(['telepon' => 'Nomor telepon wajib diisi.'])->withInput();
         }
 
+        if (strlen($rawPhone) > 20) {
+            return back()->withErrors(['telepon' => 'Nomor telepon maksimal 20 karakter.'])->withInput();
+        }
+
         try {
             $normalizedPhone = OtpService::normalizePhoneNumber($rawPhone);
         } catch (InvalidPhoneException $e) {
@@ -87,7 +91,7 @@ class PasswordResetController extends Controller
 
         // Rate limiter sebelum pencarian akun: 5 per 15 menit per role+nomor, 20 per jam per IP
         $phoneRateKey = "password_reset:phone:{$role}:{$normalizedPhone}";
-        $ipRateKey = 'password_reset:ip:' . $request->ip();
+        $ipRateKey = 'password_reset:ip:'.$request->ip();
 
         if (RateLimiter::tooManyAttempts($phoneRateKey, 5) || RateLimiter::tooManyAttempts($ipRateKey, 20)) {
             return back()->withErrors(['telepon' => 'Terlalu banyak permintaan'])->withInput();
@@ -99,7 +103,7 @@ class PasswordResetController extends Controller
         if ($this->accountDirectory->exists($role, $normalizedPhone)) {
             try {
                 $this->otpService->issue($role, $normalizedPhone);
-            } catch (OtpCooldownException | OtpLockedException | OtpDeliveryException | OtpConfigurationException $e) {
+            } catch (OtpCooldownException|OtpLockedException|OtpDeliveryException|OtpConfigurationException $e) {
                 $last4 = substr($normalizedPhone, -4);
                 Log::warning(sprintf(
                     'Penerbitan OTP gagal [%s] untuk role [%s] nomor berakhiran [%s]',
@@ -118,7 +122,7 @@ class PasswordResetController extends Controller
         ]);
 
         session([
-            'reset.role'  => $role,
+            'reset.role' => $role,
             'reset.phone' => $normalizedPhone,
             'reset.shown' => $this->maskPhone($rawPhone),
         ]);
@@ -161,7 +165,7 @@ class PasswordResetController extends Controller
         $isValid = false;
         try {
             $isValid = $this->otpService->verify($role, $phone, $code);
-        } catch (OtpLockedException | InvalidPhoneException $e) {
+        } catch (OtpLockedException|InvalidPhoneException $e) {
             $isValid = false;
         }
 
@@ -171,7 +175,7 @@ class PasswordResetController extends Controller
 
         session([
             'reset.verified_until' => now()->addMinutes(10)->timestamp,
-            'reset.verified_role'  => $role,
+            'reset.verified_role' => $role,
             'reset.verified_phone' => $phone,
         ]);
         session()->regenerate();
@@ -289,9 +293,9 @@ class PasswordResetController extends Controller
         }
 
         if ($len <= 7) {
-            return substr($phone, 0, 2) . str_repeat('*', $len - 4) . substr($phone, -2);
+            return substr($phone, 0, 2).str_repeat('*', $len - 4).substr($phone, -2);
         }
 
-        return substr($phone, 0, 4) . str_repeat('*', max(3, $len - 6)) . substr($phone, -2);
+        return substr($phone, 0, 4).str_repeat('*', max(3, $len - 6)).substr($phone, -2);
     }
 }

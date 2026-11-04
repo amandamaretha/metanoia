@@ -26,9 +26,9 @@
             <div>
                 <div class="flex flex-col items-center mt-10 mb-8">
                     <div class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md">
-                        <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
+                        <img src="{{ Auth::guard('petugas')->user()?->foto ? (filter_var(Auth::guard('petugas')->user()->foto, FILTER_VALIDATE_URL) ? Auth::guard('petugas')->user()->foto : asset(Auth::guard('petugas')->user()->foto)) : 'https://i.pravatar.cc/150?img=12' }}" alt="Profile" class="w-full h-full object-cover">
                     </div>
-                    <h2 class="mt-4 text-lg font-bold">Ammirudin suep</h2>
+                    <h2 class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
                 </div>
 
                 <nav class="px-4 space-y-2">
@@ -79,56 +79,98 @@
                 <!-- Kartu Form -->
                 <div class="bg-white rounded-xl shadow-md p-10 w-full min-h-[580px] border border-gray-200">
 
-                    <div class="grid grid-cols-[160px_1fr] gap-y-6 items-start w-full pr-4">
-
-                        <!-- Nama Produk -->
-                        <label class="text-gray-500 font-bold text-[15px] pt-3">Nama Produk</label>
-                        <input type="text" id="inputNama" class="w-full border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm">
-
-                        <!-- Deskripsi Produk -->
-                        <label class="text-gray-500 font-bold text-[15px] pt-3">Deskripsi Produk</label>
-                        <textarea id="inputDeskripsi" class="w-full border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm h-32 resize-none"></textarea>
-
-                        <!-- Harga & Kode Produk -->
-                        <label class="text-gray-500 font-bold text-[15px] pt-3">Harga Produk</label>
-                        <div class="flex items-center justify-between gap-6">
-                            <input type="number" id="inputHarga" class="w-1/2 border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm">
-
-                            <label class="text-gray-500 font-bold text-[15px] whitespace-nowrap">Kode Produk</label>
-                            <input type="text" id="inputKode" class="w-1/2 border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm">
+                    @if ($errors->any())
+                        <div class="mb-6 bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm">
+                            <p class="font-bold">Periksa kembali isian Anda.</p>
                         </div>
+                    @endif
 
-                        <!-- Area Upload Gambar (Garis Putus-putus) -->
-                        <div class="col-span-2 flex justify-center mt-6">
-                            <div class="w-[85%] h-48 border-[3px] border-dashed border-[#5C8A8A] bg-[#eef4f4] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-[#e4ecec] transition-colors relative overflow-hidden">
-                                <!-- Input File tersembunyi -->
-                                <input type="file" id="inputFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="image/*">
+                    <form action="{{ route('pengelola.detail-sampah.store') }}" method="POST" enctype="multipart/form-data" novalidate>
+                        @csrf
 
-                                <img id="imagePreview" alt="Pratinjau Gambar" class="hidden absolute inset-0 w-full h-full object-contain bg-[#eef4f4] z-[5]">
+                        <div class="grid grid-cols-[180px_1fr] gap-y-6 items-start w-full pr-4">
 
-                                <div class="relative">
-                                    <i class="fa-regular fa-image text-6xl text-[#5C8A8A]"></i>
-                                    <i class="fa-solid fa-plus absolute -top-1 -right-4 text-2xl text-[#5C8A8A]"></i>
+                            <!-- Nama Produk -->
+                            <label class="text-gray-500 font-bold text-[15px] pt-3">Nama Produk</label>
+                            <div>
+                                <input type="text" name="nama" id="inputNama" value="{{ old('nama') }}" required class="w-full border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm">
+                                @error('nama') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+
+                            <!-- Kode Produk -->
+                            <label class="text-gray-500 font-bold text-[15px] pt-3">Kode Produk</label>
+                            <div>
+                                <input type="text" name="kode" id="inputKode" value="{{ old('kode') }}" required class="w-full border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm" placeholder="Contoh: P01">
+                                @error('kode') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+
+                            <!-- Kategori Produk -->
+                            <label class="text-gray-500 font-bold text-[15px] pt-3">Kategori Produk</label>
+                            <div>
+                                <input type="text" name="kategori" id="inputKategori" value="{{ old('kategori') }}" required class="w-full border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm" placeholder="Contoh: Plastik, Kertas, Logam">
+                                @error('kategori') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+
+                            <!-- Deskripsi Produk -->
+                            <label class="text-gray-500 font-bold text-[15px] pt-3">Deskripsi Produk</label>
+                            <div>
+                                <textarea name="deskripsi" id="inputDeskripsi" class="w-full border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm h-28 resize-none">{{ old('deskripsi') }}</textarea>
+                                @error('deskripsi') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+
+                            <!-- Harga Sudah Dipilah -->
+                            <label class="text-gray-500 font-bold text-[15px] pt-3">Harga Sudah Dipilah (/kg)</label>
+                            <div>
+                                <input type="text" name="harga_sudah_dipilah" id="inputHargaSudahDipilah" value="{{ old('harga_sudah_dipilah') }}" required class="w-full border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm" placeholder="Contoh: 3.000">
+                                @error('harga_sudah_dipilah') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+
+                            <!-- Harga Belum Dipilah -->
+                            <label class="text-gray-500 font-bold text-[15px] pt-3">Harga Belum Dipilah (/kg)</label>
+                            <div>
+                                <input type="text" name="harga_belum_dipilah" id="inputHargaBelumDipilah" value="{{ old('harga_belum_dipilah') }}" required class="w-full border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm" placeholder="Contoh: 2.500">
+                                @error('harga_belum_dipilah') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+
+                            <!-- Harga Campuran -->
+                            <label class="text-gray-500 font-bold text-[15px] pt-3">Harga Campuran (/kg)</label>
+                            <div>
+                                <input type="text" name="harga_campuran" id="inputHargaCampuran" value="{{ old('harga_campuran') }}" required class="w-full border-2 border-gray-300 rounded-md px-4 py-2.5 focus:outline-none focus:border-[#5C8A8A] text-gray-700 font-medium shadow-sm" placeholder="Contoh: 2.000">
+                                @error('harga_campuran') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+
+                            <!-- Area Upload Gambar (Garis Putus-putus) -->
+                            <div class="col-span-2 flex flex-col items-center justify-center mt-4">
+                                <div class="w-[85%] h-44 border-[3px] border-dashed border-[#5C8A8A] bg-[#eef4f4] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-[#e4ecec] transition-colors relative overflow-hidden">
+                                    <!-- Input File tersembunyi -->
+                                    <input type="file" name="gambar" id="inputFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="image/jpeg,image/png,image/webp,image/jpg">
+
+                                    <img id="imagePreview" alt="Pratinjau Gambar" class="hidden absolute inset-0 w-full h-full object-contain bg-[#eef4f4] z-[5]">
+
+                                    <div class="relative">
+                                        <i class="fa-regular fa-image text-5xl text-[#5C8A8A]"></i>
+                                        <i class="fa-solid fa-plus absolute -top-1 -right-4 text-xl text-[#5C8A8A]"></i>
+                                    </div>
+                                    <span class="text-[#5C8A8A] font-bold mt-3 text-sm">Tambahkan gambar disini (opsional, maks 2 MB)</span>
                                 </div>
-                                <span class="text-[#5C8A8A] font-bold mt-4">Tambahkan gambar disini</span>
+                                @error('gambar') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
-                        </div>
 
-                        <!-- Tombol Simpan & Batal -->
-                        <div class="col-span-2 flex justify-center mt-6">
-                            <!-- Pembungkus Putih Berbayang -->
-                            <div class="bg-white p-2 rounded-xl btn-wrapper-shadow border border-gray-100 flex items-center gap-3">
-                                <button type="button" onclick="simpanProdukBaru()" class="bg-[#5CA6D6] hover:bg-blue-500 text-white font-bold py-2 px-8 rounded text-[15px] transition-colors shadow-sm">
-                                    Simpan
-                                </button>
+                            <!-- Tombol Simpan & Batal -->
+                            <div class="col-span-2 flex justify-center mt-6">
+                                <div class="bg-white p-2 rounded-xl btn-wrapper-shadow border border-gray-100 flex items-center gap-3">
+                                    <button type="submit" class="bg-[#5CA6D6] hover:bg-blue-500 text-white font-bold py-2 px-8 rounded text-[15px] transition-colors shadow-sm">
+                                        Simpan
+                                    </button>
 
-                                <button type="button" onclick="batal()" class="bg-[#F26464] hover:bg-red-500 text-white font-bold py-2 px-8 rounded text-[15px] transition-colors shadow-sm">
-                                    Batal
-                                </button>
+                                    <a href="{{ route('pengelola.detail-sampah') }}" class="bg-[#F26464] hover:bg-red-500 text-white font-bold py-2 px-8 rounded text-[15px] transition-colors shadow-sm inline-block text-center">
+                                        Batal
+                                    </a>
+                                </div>
                             </div>
-                        </div>
 
-                    </div>
+                        </div>
+                    </form>
 
                 </div>
             </div>
@@ -136,7 +178,7 @@
         </main>
     </div>
 
-    <!-- JAVASCRIPT LOGIKA SIMPAN KE LOKAL STORAGE -->
+    <!-- JAVASCRIPT PRATINJAU GAMBAR -->
     <script>
         let currentPreviewUrl = null;
         const inputFile = document.getElementById('inputFile');
@@ -160,35 +202,6 @@
                     imagePreview.classList.add('hidden');
                 }
             });
-        }
-
-        function simpanProdukBaru() {
-            let nama = document.getElementById('inputNama').value.trim();
-            let deskripsi = document.getElementById('inputDeskripsi').value.trim();
-            let harga = document.getElementById('inputHarga').value.trim();
-            let kode = document.getElementById('inputKode').value.trim();
-
-            if(nama === '' || kode === '') {
-                alert('Nama Produk dan Kode Produk wajib diisi!');
-                return;
-            }
-
-            let dataLama = JSON.parse(localStorage.getItem('db_jenis_sampah')) || [];
-
-            dataLama.unshift({
-                kode: kode,
-                nama: nama,
-                deskripsi: deskripsi,
-                harga: harga
-            });
-
-            localStorage.setItem('db_jenis_sampah', JSON.stringify(dataLama));
-            alert('Produk berhasil ditambahkan!');
-            window.location.href = "{{ route('pengelola.detail-sampah') }}";
-        }
-
-        function batal() {
-            window.location.href = "{{ route('pengelola.detail-sampah') }}";
         }
     </script>
 </body>

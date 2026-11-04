@@ -11,9 +11,8 @@ return [
     |
     */
     'portals' => [
-        'pengelola' => 'pengelola',
-        'bendahara' => 'bendahara',
-        'nasabah'   => 'nasabah',
+        'petugas' => 'petugas',
+        'nasabah' => 'nasabah',
     ],
 
     /*
@@ -22,9 +21,19 @@ return [
     |--------------------------------------------------------------------------
     */
     'portal_labels' => [
-        'pengelola' => 'Pengelola',
-        'bendahara' => 'Bendahara',
-        'nasabah'   => 'Nasabah',
+        'petugas' => 'Petugas',
+        'nasabah' => 'Nasabah',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Jabatan Petugas
+    |--------------------------------------------------------------------------
+    */
+    'jabatan' => [
+        'pengelola',
+        'bendahara',
+        'ketua',
     ],
 
     /*
@@ -47,10 +56,22 @@ return [
     |
     */
     'otp' => [
-        'ttl'                   => 300,
-        'max_attempts'          => 5,
-        'resend_cooldown'       => 60,
+        'ttl' => 300,
+        'max_attempts' => 5,
+        'resend_cooldown' => 60,
         'max_failures_per_hour' => 10, // Maksimal percobaan verifikasi salah per jam
-        'driver'                => env('OTP_DRIVER', 'log'),
+        'driver' => env('OTP_DRIVER', 'log'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Konfigurasi Penjualan ke BSI
+    |--------------------------------------------------------------------------
+    |
+    | Batas minimum berat sampah terkumpul (kg) untuk pengangkutan ke BSI.
+    |
+    */
+    'penjualan' => [
+        'batas_minimum_kg' => 100,
     ],
 ];

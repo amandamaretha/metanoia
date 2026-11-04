@@ -295,18 +295,6 @@
                     </p>
                 @endif
 
-                @if (session('error'))
-                    <p style="color: #c0392b; margin-bottom: 15px; text-align: center;">
-                        {{ session('error') }}
-                    </p>
-                @endif
-
-                @if (session('success'))
-                    <p style="color: #598b8b; margin-bottom: 15px; text-align: center;">
-                        {{ session('success') }}
-                    </p>
-                @endif
-
                 <p class="description">
                     Masukkan kode verifikasi yang telah dikirim ke nomor
                     <br>

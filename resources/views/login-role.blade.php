@@ -264,10 +264,14 @@
                     </p>
                 @endif
 
+                @if (session('error'))
+                    <p style="color: #c0392b; font-size: 13px; margin-bottom: 16px;">
+                        {{ session('error') }}
+                    </p>
+                @endif
+
                 <form
-                    action="{{ $role === 'Pengelola'
-                        ? url('/login/pengelola')
-                        : url('/login/bendahara') }}"
+                    action="{{ route('login.attempt', ['role' => $portal ?? (array_search($role, config('metanoia.portal_labels', [])) ?: strtolower($role))]) }}"
                     method="POST"
                 >
                     @csrf
@@ -302,7 +306,7 @@
                         >
                     </div>
 
-                    <a href="{{ route('password.forgot', ['role' => array_search($role, config('metanoia.portal_labels', [])) ?: strtolower($role)]) }}" class="forgot">
+                    <a href="{{ route('password.forgot', ['role' => $portal ?? (array_search($role, config('metanoia.portal_labels', [])) ?: strtolower($role))]) }}" class="forgot">
                         Lupa password?
                     </a>
 

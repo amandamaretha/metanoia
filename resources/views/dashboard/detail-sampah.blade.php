@@ -25,9 +25,9 @@
             <div>
                 <div class="flex flex-col items-center mt-10 mb-8">
                     <div class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/20">
-                        <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
+                        <img src="{{ Auth::guard('petugas')->user()?->foto ? (filter_var(Auth::guard('petugas')->user()->foto, FILTER_VALIDATE_URL) ? Auth::guard('petugas')->user()->foto : asset(Auth::guard('petugas')->user()->foto)) : 'https://i.pravatar.cc/150?img=12' }}" alt="Profile" class="w-full h-full object-cover">
                     </div>
-                    <h2 class="mt-4 text-lg font-bold">Ammirudin suep</h2>
+                    <h2 class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
                 </div>
                 <nav class="px-4 space-y-2">
                     <a href="{{ route('pengelola.dashboard') }}" class="flex items-center px-4 py-3 hover:bg-white/10 rounded-lg font-semibold transition-colors"><i class="fa-solid fa-house w-6"></i><span>Dashboard</span></a>
@@ -39,6 +39,12 @@
                     <a href="{{ route('pengelola.laporan') }}" class="flex items-center px-4 py-3 hover:bg-white/10 rounded-lg font-semibold transition-colors"><i class="fa-solid fa-file-lines w-6"></i><span>Laporan</span></a>
                 </nav>
             </div>
+
+            <div class="px-4 mt-auto">
+                <a href="{{ route('pengelola.pengaturan') }}" class="flex items-center px-4 py-3 hover:bg-white/10 rounded-lg font-semibold transition-colors">
+                    <i class="fa-solid fa-gear w-6"></i><span>Pengaturan</span>
+                </a>
+            </div>
         </aside>
 
         <!-- MAIN CONTENT CONTAINER -->
@@ -46,64 +52,70 @@
 
             <div class="bg-[#F3C546] px-10 pt-10 pb-8 rounded-xl shadow-sm w-full flex-shrink-0">
                 <h1 class="text-4xl font-extrabold text-black mb-6">Detail Sampah</h1>
-                <div class="flex gap-4">
+
+                @if (session('success'))
+                    <div class="mb-4 bg-emerald-100 border border-emerald-400 text-emerald-800 px-4 py-3 rounded-lg flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>{{ session('success') }}</span>
+                    </div>
+                @endif
+
+                <div class="flex gap-4 items-center">
                     <a href="{{ route('pengelola.detail-sampah.tambah') }}" class="bg-[#5C8A8A] hover:bg-[#4a7070] text-white font-bold py-2.5 px-6 rounded-md shadow-md transition-colors text-[15px] flex items-center gap-2 border-[1.5px] border-white">
                         <i class="fa-solid fa-circle-plus"></i> Tambah Produk
                     </a>
-                    <a href="{{ route('pengelola.detail-sampah.ubah') }}" class="bg-[#FF0000] hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-md shadow-md transition-colors text-[15px] flex items-center gap-2 border-[1.5px] border-white">
-                        <i class="fa-solid fa-pen-to-square"></i> Ubah Produk
-                    </a>
+                    @if ($modeUbah ?? false)
+                        <a href="{{ route('pengelola.detail-sampah') }}" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2.5 px-6 rounded-md shadow-md transition-colors text-[15px] flex items-center gap-2 border-[1.5px] border-white">
+                            <i class="fa-solid fa-xmark"></i> Batal Ubah
+                        </a>
+                        <span class="text-sm font-semibold text-black bg-white/70 px-3 py-1.5 rounded-md border border-black/10">
+                            Mode Ubah Aktif: Klik salah satu produk di bawah untuk mengubah datanya
+                        </span>
+                    @else
+                        <a href="{{ route('pengelola.detail-sampah', ['mode' => 'ubah']) }}" class="bg-[#FF0000] hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-md shadow-md transition-colors text-[15px] flex items-center gap-2 border-[1.5px] border-white">
+                            <i class="fa-solid fa-pen-to-square"></i> Ubah Produk
+                        </a>
+                    @endif
                 </div>
             </div>
 
-            <!-- AREA GRID (Dikosongkan untuk diisi oleh JS) -->
+            <!-- AREA GRID PRODUK DARI SERVER -->
             <div class="px-10 py-8 flex-1 overflow-y-auto">
                 <div id="gridProdukContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    <!-- Data akan dirender otomatis oleh JavaScript -->
+                    @forelse ($jenisSampah as $item)
+                        @php
+                            $targetUrl = ($modeUbah ?? false)
+                                ? route('pengelola.detail-sampah.ubah', $item->id)
+                                : 'javascript:void(0)';
+                        @endphp
+                        <a href="{{ ($modeUbah ?? false) ? route('pengelola.detail-sampah.ubah', $item->id) : route('pengelola.detail-sampah.ubah', $item->id) }}"
+                           class="bg-[#CBE6E0] border-[1.5px] border-[#103D34] rounded-xl p-2.5 flex items-stretch gap-3 hover:shadow-md cursor-pointer transition-shadow h-28 relative {{ ($modeUbah ?? false) ? 'ring-2 ring-red-500 hover:border-red-600' : '' }}">
+                            @if ($modeUbah ?? false)
+                                <span class="absolute top-1 right-2 text-xs bg-red-600 text-white px-2 py-0.5 rounded-full font-bold">
+                                    <i class="fa-solid fa-pen text-[10px]"></i> Ubah
+                                </span>
+                            @endif
+                            <div class="w-[90px] h-full bg-white rounded-lg flex-shrink-0 overflow-hidden border border-gray-300 flex items-center justify-center">
+                                @if ($item->gambar)
+                                    <img src="{{ asset('storage/' . $item->gambar) }}" alt="{{ $item->nama }}" class="w-full h-full object-cover">
+                                @else
+                                    <div class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-[10px]">Gambar</div>
+                                @endif
+                            </div>
+                            <div class="flex flex-col flex-1 justify-center items-center px-1 text-center">
+                                <span class="font-extrabold text-[#103D34] text-xl leading-tight">{{ $item->kode }}</span>
+                                <span class="font-bold text-[#103D34] text-[12px] leading-tight mb-1">{{ $item->nama }}</span>
+                                <span class="text-[#103D34] text-[9px] leading-tight overflow-hidden text-ellipsis line-clamp-3">{{ $item->deskripsi }}</span>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="col-span-full text-center py-12 text-gray-500">
+                            <i class="fa-solid fa-box-open text-4xl mb-3 block text-gray-400"></i>
+                            <p class="font-semibold">Belum ada data produk sampah.</p>
+                            <p class="text-sm mt-1">Silakan klik tombol "Tambah Produk" untuk menambahkan jenis sampah baru.</p>
+                        </div>
+                    @endforelse
                 </div>
             </div>
-
-        </main>
-    </div>
-
-    <!-- JAVASCRIPT LOGIKA MENGAMBIL DATA PRODUK -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let container = document.getElementById("gridProdukContainer");
-
-            // Mengambil data dari localStorage (Database sementara browser)
-            let dataProduk = JSON.parse(localStorage.getItem('db_jenis_sampah'));
-
-            // Jika belum ada data sama sekali, berikan dummy data agar tampilan awal tidak kosong
-            if (!dataProduk || dataProduk.length === 0) {
-                dataProduk = [
-                    { kode: 'POS', nama: 'Gelas / Cup Bening Bersih', deskripsi: 'Gelas Plastik kemasan warna bening yang sudah dipotong bibir gelasnya' },
-                    { kode: 'P06', nama: 'Botol Putih', deskripsi: 'Botol plastik bahan PET berwarna putih pekat, bebas dari tutup botol & label' },
-                    { kode: 'P07', nama: 'Ember warna campur', deskripsi: 'Wadah/kemasan plastik berbahan PP contoh jerigen, HDPE, LDPE, & ember, botol oli, botol sampo' }
-                ];
-                // Simpan dummy ini ke local storage
-                localStorage.setItem('db_jenis_sampah', JSON.stringify(dataProduk));
-            }
-
-            // Render HTML berdasarkan data yang ada
-            let htmlContent = "";
-            dataProduk.forEach(item => {
-                htmlContent += `
-                    <div class="bg-[#CBE6E0] border-[1.5px] border-[#103D34] rounded-xl p-2.5 flex items-stretch gap-3 hover:shadow-md cursor-pointer transition-shadow h-28">
-                        <div class="w-[90px] h-full bg-white rounded-lg flex-shrink-0 overflow-hidden border border-gray-300 flex items-center justify-center">
-                            <div class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-[10px]">Gambar</div>
-                        </div>
-                        <div class="flex flex-col flex-1 justify-center items-center px-1 text-center">
-                            <span class="font-extrabold text-[#103D34] text-xl leading-tight">${item.kode}</span>
-                            <span class="font-bold text-[#103D34] text-[12px] leading-tight mb-1">${item.nama}</span>
-                            <span class="text-[#103D34] text-[9px] leading-tight overflow-hidden text-ellipsis line-clamp-3">${item.deskripsi}</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = htmlContent;
-        });
-    </script>
 </body>
 </html>

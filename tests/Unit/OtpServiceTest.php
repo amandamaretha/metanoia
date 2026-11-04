@@ -20,13 +20,14 @@ use Tests\TestCase;
 class OtpServiceTest extends TestCase
 {
     protected FakeOtpSender $sender;
+
     protected OtpService $service;
 
     protected function setUp(): void
     {
         parent::setUp();
         Cache::flush();
-        $this->sender = new FakeOtpSender();
+        $this->sender = new FakeOtpSender;
         $this->service = new OtpService($this->sender);
     }
 
@@ -35,18 +36,18 @@ class OtpServiceTest extends TestCase
      */
     public function test_kedaluwarsa(): void
     {
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code = $this->sender->lastCode();
         $this->assertNotNull($code);
 
         // Maju 301 detik melewati batas TTL (300 detik)
         $this->travel(301)->seconds();
 
-        $verified = $this->service->verify('pengelola', '081234567890', $code);
+        $verified = $this->service->verify('petugas', '081234567890', $code);
         $this->assertFalse($verified);
 
         // Cache harus sudah terhapus
-        $this->assertNull(Cache::get('otp:data:pengelola:6281234567890'));
+        $this->assertNull(Cache::get('otp:data:petugas:6281234567890:reset'));
     }
 
     /**
@@ -54,7 +55,7 @@ class OtpServiceTest extends TestCase
      */
     public function test_lima_kali_salah_hangus(): void
     {
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code = $this->sender->lastCode();
         $this->assertNotNull($code);
 
@@ -62,16 +63,16 @@ class OtpServiceTest extends TestCase
 
         // 4 kali salah: masih tersimpan
         for ($i = 1; $i <= 4; $i++) {
-            $this->assertFalse($this->service->verify('pengelola', '081234567890', $wrongCode));
-            $this->assertNotNull(Cache::get('otp:data:pengelola:6281234567890'));
+            $this->assertFalse($this->service->verify('petugas', '081234567890', $wrongCode));
+            $this->assertNotNull(Cache::get('otp:data:petugas:6281234567890:reset'));
         }
 
         // Percobaan ke-5 yang salah: hangus dan terhapus
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $wrongCode));
-        $this->assertNull(Cache::get('otp:data:pengelola:6281234567890'));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $wrongCode));
+        $this->assertNull(Cache::get('otp:data:petugas:6281234567890:reset'));
 
         // Percobaan ke-6 dengan KODE YANG BENAR tetap ditolak karena sudah hangus
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $code));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $code));
     }
 
     /**
@@ -79,16 +80,16 @@ class OtpServiceTest extends TestCase
      */
     public function test_sekali_pakai(): void
     {
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code = $this->sender->lastCode();
         $this->assertNotNull($code);
 
         // Verifikasi pertama berhasil
-        $this->assertTrue($this->service->verify('pengelola', '081234567890', $code));
+        $this->assertTrue($this->service->verify('petugas', '081234567890', $code));
 
         // Verifikasi kedua dengan kode yang sama langsung ditolak
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $code));
-        $this->assertNull(Cache::get('otp:data:pengelola:6281234567890'));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $code));
+        $this->assertNull(Cache::get('otp:data:petugas:6281234567890:reset'));
     }
 
     /**
@@ -96,22 +97,22 @@ class OtpServiceTest extends TestCase
      */
     public function test_kode_baru_menggantikan_lama(): void
     {
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code1 = $this->sender->lastCode();
         $this->assertNotNull($code1);
 
         // Lewati cooldown 60 detik untuk menerbitkan kode baru
         $this->travel(61)->seconds();
 
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code2 = $this->sender->lastCode();
         $this->assertNotNull($code2);
 
         // Kode pertama sudah tidak valid
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $code1));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $code1));
 
         // Kode kedua yang aktif dan valid
-        $this->assertTrue($this->service->verify('pengelola', '081234567890', $code2));
+        $this->assertTrue($this->service->verify('petugas', '081234567890', $code2));
     }
 
     /**
@@ -119,11 +120,11 @@ class OtpServiceTest extends TestCase
      */
     public function test_jeda_kirim_ulang(): void
     {
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
 
         try {
             // Permintaan kedua langsung tanpa menunggu jeda 60 detik
-            $this->service->issue('pengelola', '081234567890');
+            $this->service->issue('petugas', '081234567890');
             $this->fail('Harusnya melempar OtpCooldownException.');
         } catch (OtpCooldownException $e) {
             $this->assertSame('Mohon tunggu sebelum meminta kode verifikasi baru.', $e->getMessage());
@@ -137,21 +138,21 @@ class OtpServiceTest extends TestCase
      */
     public function test_format_salah(): void
     {
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code = $this->sender->lastCode();
         $this->assertNotNull($code);
 
         // Kurang dari 6 digit
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', '123'));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', '123'));
         // Lebih dari 6 digit
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', '1234567'));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', '1234567'));
         // Mengandung karakter non-angka
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', 'abcdef'));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', 'abcdef'));
         // String kosong
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', ''));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', ''));
 
         // Format salah tidak memakan kuota percobaan, kode benar tetap bisa diverifikasi
-        $this->assertTrue($this->service->verify('pengelola', '081234567890', $code));
+        $this->assertTrue($this->service->verify('petugas', '081234567890', $code));
     }
 
     /**
@@ -160,12 +161,12 @@ class OtpServiceTest extends TestCase
     public function test_nomor_berformat_berbeda_dianggap_sama(): void
     {
         // Terbitkan dengan format lokal awalan 0
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code = $this->sender->lastCode();
         $this->assertNotNull($code);
 
         // Verifikasi dengan format internasional awalan +62 dengan spasi dan strip
-        $this->assertTrue($this->service->verify('pengelola', '+62 812-3456-7890', $code));
+        $this->assertTrue($this->service->verify('petugas', '+62 812-3456-7890', $code));
     }
 
     /**
@@ -173,7 +174,7 @@ class OtpServiceTest extends TestCase
      */
     public function test_issue_tidak_mengembalikan_kode(): void
     {
-        $result = $this->service->issue('pengelola', '081234567890');
+        $result = $this->service->issue('petugas', '081234567890');
 
         $this->assertNull($result);
         $this->assertCount(1, $this->sender->messages);
@@ -191,9 +192,9 @@ class OtpServiceTest extends TestCase
 
         Log::spy();
 
-        $logSender = new LogOtpSender();
+        $logSender = new LogOtpSender;
         try {
-            $logSender->send('pengelola', '6281234567890', '123456');
+            $logSender->send('petugas', '6281234567890', '123456');
             $this->fail('Harusnya melempar OtpDeliveryException.');
         } catch (OtpDeliveryException $e) {
             $this->assertStringContainsString('hanya diizinkan pada environment \'local\'', $e->getMessage());
@@ -202,9 +203,9 @@ class OtpServiceTest extends TestCase
         // Pastikan tidak ada kode yang dicatat ke log
         Log::shouldNotHaveReceived('info');
 
-        $nullSender = new NullOtpSender();
+        $nullSender = new NullOtpSender;
         $this->expectException(OtpDeliveryException::class);
-        $nullSender->send('pengelola', '6281234567890', '123456');
+        $nullSender->send('petugas', '6281234567890', '123456');
     }
 
     /**
@@ -217,7 +218,7 @@ class OtpServiceTest extends TestCase
         $this->expectException(OtpConfigurationException::class);
         $this->expectExceptionMessage('APP_KEY tidak terkonfigurasi.');
 
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
     }
 
     /**
@@ -238,7 +239,7 @@ class OtpServiceTest extends TestCase
      */
     public function test_kode_tidak_melar(): void
     {
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code = $this->sender->lastCode();
         $this->assertNotNull($code);
 
@@ -247,14 +248,14 @@ class OtpServiceTest extends TestCase
 
         // Verifikasi dengan kode yang salah
         $wrongCode = ($code === '111111') ? '222222' : '111111';
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $wrongCode));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $wrongCode));
 
         // Maju 150 detik lagi (total 350 detik sejak awal, melebihi TTL 300 detik)
         $this->travel(150)->seconds();
 
         // Kode tidak boleh melar: harus tetap kedaluwarsa dan ditolak
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $code));
-        $this->assertNull(Cache::get('otp:data:pengelola:6281234567890'));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $code));
+        $this->assertNull(Cache::get('otp:data:petugas:6281234567890:reset'));
     }
 
     /**
@@ -262,21 +263,21 @@ class OtpServiceTest extends TestCase
      */
     public function test_salah_dua_kali_lalu_benar_sukses(): void
     {
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code = $this->sender->lastCode();
         $this->assertNotNull($code);
 
         $wrongCode = ($code === '111111') ? '222222' : '111111';
 
         // Salah pertama
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $wrongCode));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $wrongCode));
         // Salah kedua
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $wrongCode));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $wrongCode));
         // Ketiga dengan kode benar -> sukses
-        $this->assertTrue($this->service->verify('pengelola', '081234567890', $code));
+        $this->assertTrue($this->service->verify('petugas', '081234567890', $code));
 
         // Sudah sekali pakai: verifikasi lagi harus gagal
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $code));
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $code));
     }
 
     /**
@@ -288,27 +289,27 @@ class OtpServiceTest extends TestCase
         config(['metanoia.otp.max_failures_per_hour' => 3]);
 
         // Terbitan 1: lakukan 2 verifikasi salah
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code1 = $this->sender->lastCode();
         $wrongCode = ($code1 === '111111') ? '222222' : '111111';
 
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $wrongCode)); // Gagal 1
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $wrongCode)); // Gagal 2
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $wrongCode)); // Gagal 1
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $wrongCode)); // Gagal 2
 
         // Maju 61 detik melewati cooldown jeda kirim ulang
         $this->travel(61)->seconds();
 
         // Terbitkan kode baru: anggaran gagal tidak boleh direset
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $code2 = $this->sender->lastCode();
         $this->assertNotNull($code2);
 
         // Verifikasi salah ke-3 pada kode baru (mencapai batas maksimal 3 gagal per jam)
-        $this->assertFalse($this->service->verify('pengelola', '081234567890', $wrongCode)); // Gagal 3
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $wrongCode)); // Gagal 3
 
         // Panggilan verify berikutnya melempar OtpLockedException
         try {
-            $this->service->verify('pengelola', '081234567890', $code2);
+            $this->service->verify('petugas', '081234567890', $code2);
             $this->fail('Harusnya melempar OtpLockedException pada verify().');
         } catch (OtpLockedException $e) {
             $this->assertStringContainsString('Akun terkunci sementara', $e->getMessage());
@@ -316,7 +317,7 @@ class OtpServiceTest extends TestCase
 
         // Panggilan issue berikutnya juga melempar OtpLockedException
         try {
-            $this->service->issue('pengelola', '081234567890');
+            $this->service->issue('petugas', '081234567890');
             $this->fail('Harusnya melempar OtpLockedException pada issue().');
         } catch (OtpLockedException $e) {
             $this->assertStringContainsString('Akun terkunci sementara', $e->getMessage());
@@ -326,7 +327,7 @@ class OtpServiceTest extends TestCase
         $this->travel(3601)->seconds();
 
         // Kunci terbuka kembali, issue berjalan normal
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $this->assertNotNull($this->sender->lastCode());
     }
 
@@ -335,7 +336,8 @@ class OtpServiceTest extends TestCase
      */
     public function test_jeda_dan_cache_dibersihkan_bila_sender_gagal(): void
     {
-        $failingSender = new class implements OtpSender {
+        $failingSender = new class implements OtpSender
+        {
             public function send(string $role, string $telepon, string $kode): void
             {
                 throw new OtpDeliveryException('Simulasi kegagalan gateway pengiriman');
@@ -345,18 +347,18 @@ class OtpServiceTest extends TestCase
         $serviceWithFailingSender = new OtpService($failingSender);
 
         try {
-            $serviceWithFailingSender->issue('pengelola', '081234567890');
+            $serviceWithFailingSender->issue('petugas', '081234567890');
             $this->fail('Harusnya melempar OtpDeliveryException');
         } catch (OtpDeliveryException $e) {
             $this->assertSame('Simulasi kegagalan gateway pengiriman', $e->getMessage());
         }
 
         // Cache data OTP dan jeda cooldown harus bersih
-        $this->assertNull(Cache::get('otp:data:pengelola:6281234567890'));
-        $this->assertNull(Cache::get('otp:cooldown:pengelola:6281234567890'));
+        $this->assertNull(Cache::get('otp:data:petugas:6281234567890:reset'));
+        $this->assertNull(Cache::get('otp:cooldown:petugas:6281234567890:reset'));
 
         // Karena cooldown bersih, issue dengan sender normal langsung bisa dilakukan
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         $this->assertNotNull($this->sender->lastCode());
     }
 
@@ -367,16 +369,16 @@ class OtpServiceTest extends TestCase
     {
         // 1. InvalidPhoneException
         try {
-            $this->service->issue('pengelola', 'nomor-salah');
+            $this->service->issue('petugas', 'nomor-salah');
             $this->fail('Harusnya melempar InvalidPhoneException');
         } catch (InvalidPhoneException $e) {
             $this->assertInstanceOf(InvalidPhoneException::class, $e);
         }
 
         // 2. OtpCooldownException membawa sisa detik
-        $this->service->issue('pengelola', '081234567890');
+        $this->service->issue('petugas', '081234567890');
         try {
-            $this->service->issue('pengelola', '081234567890');
+            $this->service->issue('petugas', '081234567890');
             $this->fail('Harusnya melempar OtpCooldownException');
         } catch (OtpCooldownException $e) {
             $this->assertInstanceOf(OtpCooldownException::class, $e);
@@ -386,7 +388,7 @@ class OtpServiceTest extends TestCase
         // 3. OtpConfigurationException jika APP_KEY kosong
         config(['app.key' => '']);
         try {
-            $this->service->issue('pengelola', '081299999999');
+            $this->service->issue('petugas', '081299999999');
             $this->fail('Harusnya melempar OtpConfigurationException');
         } catch (OtpConfigurationException $e) {
             $this->assertInstanceOf(OtpConfigurationException::class, $e);
@@ -396,19 +398,19 @@ class OtpServiceTest extends TestCase
 
         // 4. OtpLockedException
         config(['metanoia.otp.max_failures_per_hour' => 1]);
-        $this->service->issue('pengelola', '081288888888');
-        $this->service->verify('pengelola', '081288888888', '000000'); // 1 kali gagal = batas tercapai
+        $this->service->issue('petugas', '081288888888');
+        $this->service->verify('petugas', '081288888888', '000000'); // 1 kali gagal = batas tercapai
         try {
-            $this->service->verify('pengelola', '081288888888', '000000');
+            $this->service->verify('petugas', '081288888888', '000000');
             $this->fail('Harusnya melempar OtpLockedException');
         } catch (OtpLockedException $e) {
             $this->assertInstanceOf(OtpLockedException::class, $e);
         }
 
         // 5. OtpDeliveryException
-        $nullSender = new NullOtpSender();
+        $nullSender = new NullOtpSender;
         $this->expectException(OtpDeliveryException::class);
-        $nullSender->send('pengelola', '6281234567890', '123456');
+        $nullSender->send('petugas', '6281234567890', '123456');
     }
 
     /**
@@ -422,6 +424,21 @@ class OtpServiceTest extends TestCase
             $this->fail('Harusnya melempar InvalidArgumentException pada issue');
         } catch (InvalidArgumentException $e) {
             $this->assertStringContainsString('Role portal [alien] tidak valid.', $e->getMessage());
+        }
+
+        // Role lama (pengelola dan bendahara) juga ditolak
+        try {
+            $this->service->issue('pengelola', '081234567890');
+            $this->fail('Harusnya melempar InvalidArgumentException untuk pengelola');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('Role portal [pengelola] tidak valid.', $e->getMessage());
+        }
+
+        try {
+            $this->service->issue('bendahara', '081234567890');
+            $this->fail('Harusnya melempar InvalidArgumentException untuk bendahara');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('Role portal [bendahara] tidak valid.', $e->getMessage());
         }
 
         // Pada verify()
@@ -526,13 +543,65 @@ class OtpServiceTest extends TestCase
         config(['app.key' => '']);
 
         try {
-            $this->service->issue('pengelola', '081234567890');
+            $this->service->issue('petugas', '081234567890');
             $this->fail('Harusnya melempar OtpConfigurationException');
         } catch (OtpConfigurationException $e) {
             $this->assertInstanceOf(OtpConfigurationException::class, $e);
         }
 
         // Pastikan jeda kirim ulang (cooldown) TIDAK disimpan karena validasi config gagal terlebih dahulu
-        $this->assertNull(Cache::get('otp:cooldown:pengelola:6281234567890'));
+        $this->assertNull(Cache::get('otp:cooldown:petugas:6281234567890:reset'));
+    }
+
+    /**
+     * 21. Purpose berbeda tidak saling memengaruhi:
+     * - Cache key terpisah untuk issue dan verify.
+     * - Cooldown pada satu purpose tidak memblokir purpose lain.
+     * - Kode purpose A tidak bisa diverifikasi pada purpose B.
+     * - Verifikasi sukses pada purpose A tidak menghapus kode purpose B.
+     * - Invalid purpose melempar InvalidArgumentException.
+     */
+    public function test_purpose_berbeda_tidak_saling_memengaruhi(): void
+    {
+        // 1. Issue untuk purpose 'reset'
+        $this->service->issue('petugas', '081234567890', 'reset');
+        $codeReset = $this->sender->lastCode();
+        $this->assertNotNull($codeReset);
+
+        // 2. Issue untuk purpose 'ganti_telepon' dengan nomor yang sama (tidak terhalang cooldown 'reset')
+        $this->service->issue('petugas', '081234567890', 'ganti_telepon');
+        $codeGanti = $this->sender->lastCode();
+        $this->assertNotNull($codeGanti);
+
+        // Keduanya tersimpan di cache key terpisah
+        $this->assertNotNull(Cache::get('otp:data:petugas:6281234567890:reset'));
+        $this->assertNotNull(Cache::get('otp:data:petugas:6281234567890:ganti_telepon'));
+
+        // 3. Verifikasi kode reset menggunakan purpose 'ganti_telepon' harus gagal
+        $this->assertFalse($this->service->verify('petugas', '081234567890', $codeReset, 'ganti_telepon'));
+
+        // 4. Verifikasi kode reset menggunakan purpose 'reset' harus sukses
+        $this->assertTrue($this->service->verify('petugas', '081234567890', $codeReset, 'reset'));
+
+        // Cache 'reset' terhapus, tetapi cache 'ganti_telepon' masih utuh
+        $this->assertNull(Cache::get('otp:data:petugas:6281234567890:reset'));
+        $this->assertNotNull(Cache::get('otp:data:petugas:6281234567890:ganti_telepon'));
+
+        // 5. Verifikasi kode ganti_telepon menggunakan purpose 'ganti_telepon' sukses
+        $this->assertTrue($this->service->verify('petugas', '081234567890', $codeGanti, 'ganti_telepon'));
+        $this->assertNull(Cache::get('otp:data:petugas:6281234567890:ganti_telepon'));
+
+        // 6. Purpose tidak diizinkan melempar InvalidArgumentException
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->issue('petugas', '081234567890', 'invalid_purpose');
+    }
+
+    /**
+     * Verifikasi dengan purpose invalid melempar InvalidArgumentException.
+     */
+    public function test_verify_purpose_invalid_lempar_exception(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->verify('petugas', '081234567890', '123456', 'invalid_purpose');
     }
 }

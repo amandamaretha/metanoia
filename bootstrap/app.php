@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckJabatan;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,7 +13,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'jabatan' => CheckJabatan::class,
+        ]);
+
+        $middleware->redirectGuestsTo(function (Request $request): string {
+            if ($request->is('nasabah*')) {
+                return route('login.show', ['role' => 'nasabah']);
+            }
+
+            return route('login.show', ['role' => 'petugas']);
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

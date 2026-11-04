@@ -19,6 +19,8 @@ class OtpService
         $this->sender = $sender ?? app(OtpSender::class);
     }
 
+    public const ALLOWED_PURPOSES = ['reset', 'ganti_telepon'];
+
     /**
      * Terbitkan kode OTP 6 digit baru di dalam cache lock atomik dan kirim via sender.
      * Tidak mengembalikan kode (void).
@@ -28,27 +30,25 @@ class OtpService
      * agar operasi network I/O yang berpotensi lambat tidak menahan lock atomik.
      * Saat ini pemanggilan masih berada di dalam lock untuk driver lokal.
      *
-     * @param string $role
-     * @param string $telepon
-     * @return void
      *
-     * @throws InvalidArgumentException Jika role tidak terdaftar di config('metanoia.portals').
+     * @throws InvalidArgumentException Jika role atau purpose tidak valid.
      * @throws InvalidPhoneException Jika format nomor telepon tidak valid.
      * @throws OtpLockedException Jika akun terkunci sementara karena anggaran gagal tercapai atau lock timeout.
      * @throws OtpConfigurationException Jika konfigurasi APP_KEY kosong.
      * @throws OtpCooldownException Jika jeda kirim ulang masih aktif (membawa sisa detik).
      * @throws OtpDeliveryException Jika pengiriman pesan gagal.
      */
-    public function issue(string $role, string $telepon): void
+    public function issue(string $role, string $telepon, string $purpose = 'reset'): void
     {
         $this->validateRole($role);
+        $this->validatePurpose($purpose);
         $normalizedPhone = self::normalizePhoneNumber($telepon);
-        $lockKey = "otp:lock:{$role}:{$normalizedPhone}";
+        $lockKey = "otp:lock:{$role}:{$normalizedPhone}:{$purpose}";
 
         try {
-            Cache::lock($lockKey, 10)->block(5, function () use ($role, $normalizedPhone) {
+            Cache::lock($lockKey, 10)->block(5, function () use ($role, $normalizedPhone, $purpose) {
                 // 1. Cek apakah terkunci karena anggaran gagal verifikasi per jam tercapai
-                if ($this->isLocked($role, $normalizedPhone)) {
+                if ($this->isLocked($role, $normalizedPhone, $purpose)) {
                     throw new OtpLockedException('Batas percobaan verifikasi tercapai. Akun terkunci sementara.');
                 }
 
@@ -57,10 +57,10 @@ class OtpService
 
                 // 2. Generate kode 6 digit dan hitung hash SEBELUM jeda kirim ulang (memvalidasi APP_KEY)
                 $kode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-                $hash = $this->hashKode($role, $normalizedPhone, $kode);
+                $hash = $this->hashKode($role, $normalizedPhone, $kode, $purpose);
 
                 // 3. Jeda kirim ulang pakai Cache::add atomik di dalam lock
-                $cooldownKey = "otp:cooldown:{$role}:{$normalizedPhone}";
+                $cooldownKey = "otp:cooldown:{$role}:{$normalizedPhone}:{$purpose}";
                 $cooldownSeconds = (int) config('metanoia.otp.resend_cooldown', 60);
                 $cooldownExpires = now()->addSeconds($cooldownSeconds)->timestamp;
 
@@ -71,12 +71,12 @@ class OtpService
                     throw new OtpCooldownException($secondsRemaining, 'Mohon tunggu sebelum meminta kode verifikasi baru.');
                 }
 
-                $dataKey = "otp:data:{$role}:{$normalizedPhone}";
+                $dataKey = "otp:data:{$role}:{$normalizedPhone}:{$purpose}";
 
-                // Kode baru menimpa kode lama (satu kode aktif per role dan nomor)
+                // Kode baru menimpa kode lama (satu kode aktif per role, nomor, dan purpose)
                 Cache::put($dataKey, [
-                    'hash'       => $hash,
-                    'attempts'   => 0,
+                    'hash' => $hash,
+                    'attempts' => 0,
                     'expires_at' => $expiresAt,
                 ], $ttl);
 
@@ -97,18 +97,15 @@ class OtpService
     /**
      * Verifikasi kode OTP di dalam cache lock atomik.
      *
-     * @param string $role
-     * @param string $telepon
-     * @param string $kode
-     * @return bool
      *
-     * @throws InvalidArgumentException Jika role tidak terdaftar di config('metanoia.portals').
+     * @throws InvalidArgumentException Jika role atau purpose tidak valid.
      * @throws InvalidPhoneException Jika format nomor telepon tidak valid.
      * @throws OtpLockedException Jika akun terkunci sementara karena anggaran gagal tercapai atau lock timeout.
      */
-    public function verify(string $role, string $telepon, string $kode): bool
+    public function verify(string $role, string $telepon, string $kode, string $purpose = 'reset'): bool
     {
         $this->validateRole($role);
+        $this->validatePurpose($purpose);
         $normalizedPhone = self::normalizePhoneNumber($telepon);
 
         // Validasi format kode: harus tepat 6 digit angka
@@ -116,20 +113,21 @@ class OtpService
             return false;
         }
 
-        $lockKey = "otp:lock:{$role}:{$normalizedPhone}";
+        $lockKey = "otp:lock:{$role}:{$normalizedPhone}:{$purpose}";
 
         try {
-            return (bool) Cache::lock($lockKey, 10)->block(5, function () use ($role, $normalizedPhone, $kode) {
+            return (bool) Cache::lock($lockKey, 10)->block(5, function () use ($role, $normalizedPhone, $kode, $purpose) {
                 // Cek apakah akun terkunci karena melebihi anggaran gagal per jam
-                if ($this->isLocked($role, $normalizedPhone)) {
+                if ($this->isLocked($role, $normalizedPhone, $purpose)) {
                     throw new OtpLockedException('Batas percobaan verifikasi tercapai. Akun terkunci sementara.');
                 }
 
-                $dataKey = "otp:data:{$role}:{$normalizedPhone}";
+                $dataKey = "otp:data:{$role}:{$normalizedPhone}:{$purpose}";
                 $data = Cache::get($dataKey);
 
                 if (! is_array($data) || ! isset($data['hash'], $data['expires_at'])) {
-                    $this->recordFailure($role, $normalizedPhone);
+                    $this->recordFailure($role, $normalizedPhone, $purpose);
+
                     return false;
                 }
 
@@ -139,7 +137,8 @@ class OtpService
                 // Lewat expires_at -> tolak, hapus kode, dan catat kegagalan
                 if ($now >= $expiresAt) {
                     Cache::forget($dataKey);
-                    $this->recordFailure($role, $normalizedPhone);
+                    $this->recordFailure($role, $normalizedPhone, $purpose);
+
                     return false;
                 }
 
@@ -151,25 +150,28 @@ class OtpService
                 // Lewat batas attempts per kode -> hapus kode, catat kegagalan, dan tolak
                 if ($attempts > $maxAttempts) {
                     Cache::forget($dataKey);
-                    $this->recordFailure($role, $normalizedPhone);
+                    $this->recordFailure($role, $normalizedPhone, $purpose);
+
                     return false;
                 }
 
-                $inputHash = $this->hashKode($role, $normalizedPhone, $kode);
+                $inputHash = $this->hashKode($role, $normalizedPhone, $kode, $purpose);
                 $isMatch = hash_equals($data['hash'], $inputHash);
 
                 if ($isMatch) {
                     // Sekali pakai: langsung hapus setelah berhasil diverifikasi
                     Cache::forget($dataKey);
+
                     return true;
                 }
 
                 // Verifikasi salah -> catat ke anggaran kegagalan per jam
-                $this->recordFailure($role, $normalizedPhone);
+                $this->recordFailure($role, $normalizedPhone, $purpose);
 
                 // Jika salah dan telah mencapai batas maksimal percobaan kode: hapus kode dan tolak
                 if ($attempts >= $maxAttempts) {
                     Cache::forget($dataKey);
+
                     return false;
                 }
 
@@ -189,8 +191,6 @@ class OtpService
      * Menangani awalan '00', '+62 0812', '0', '8', dan '+62'.
      * Panjang akhir harus 10 sampai 15 digit.
      *
-     * @param string $phoneNumber
-     * @return string
      *
      * @throws InvalidPhoneException Jika format nomor tidak valid atau di luar batas 10-15 digit.
      */
@@ -209,13 +209,13 @@ class OtpService
 
         // Tangani awalan '+62 0812...' atau '620812...' di mana ada angka 0 setelah kode negara 62
         if (str_starts_with($digits, '620')) {
-            $digits = '62' . substr($digits, 3);
+            $digits = '62'.substr($digits, 3);
         } elseif (str_starts_with($digits, '0')) {
             // Awalan lokal '08...' diubah ke '628...'
-            $digits = '62' . substr($digits, 1);
+            $digits = '62'.substr($digits, 1);
         } elseif (str_starts_with($digits, '8')) {
             // Awalan tanpa 0 seperti '812...' diubah ke '62812...'
-            $digits = '62' . $digits;
+            $digits = '62'.$digits;
         }
 
         $length = strlen($digits);
@@ -230,7 +230,6 @@ class OtpService
     /**
      * Memvalidasi apakah role terdaftar di config('metanoia.portals').
      *
-     * @param string $role
      * @throws InvalidArgumentException Jika role tidak terdaftar.
      */
     protected function validateRole(string $role): void
@@ -243,11 +242,23 @@ class OtpService
     }
 
     /**
-     * Memeriksa apakah role dan nomor telah mencapai batas kegagalan verifikasi per jam.
+     * Memvalidasi apakah purpose diperbolehkan ('reset' atau 'ganti_telepon').
+     *
+     * @throws InvalidArgumentException Jika purpose tidak diizinkan.
      */
-    protected function isLocked(string $role, string $normalizedPhone): bool
+    protected function validatePurpose(string $purpose): void
     {
-        $failureKey = "otp:failures:{$role}:{$normalizedPhone}";
+        if (! in_array($purpose, self::ALLOWED_PURPOSES, true)) {
+            throw new InvalidArgumentException("Tujuan OTP [{$purpose}] tidak valid.");
+        }
+    }
+
+    /**
+     * Memeriksa apakah role, nomor, dan purpose telah mencapai batas kegagalan verifikasi per jam.
+     */
+    protected function isLocked(string $role, string $normalizedPhone, string $purpose = 'reset'): bool
+    {
+        $failureKey = "otp:failures:{$role}:{$normalizedPhone}:{$purpose}";
         $data = Cache::get($failureKey);
 
         if (! is_array($data) || ! isset($data['count'], $data['expires_at'])) {
@@ -257,6 +268,7 @@ class OtpService
         $now = now()->timestamp;
         if ($now >= (int) $data['expires_at']) {
             Cache::forget($failureKey);
+
             return false;
         }
 
@@ -268,9 +280,9 @@ class OtpService
     /**
      * Menambahkan catatan kegagalan verifikasi pada jendela 1 jam.
      */
-    protected function recordFailure(string $role, string $normalizedPhone): void
+    protected function recordFailure(string $role, string $normalizedPhone, string $purpose = 'reset'): void
     {
-        $failureKey = "otp:failures:{$role}:{$normalizedPhone}";
+        $failureKey = "otp:failures:{$role}:{$normalizedPhone}:{$purpose}";
         $data = Cache::get($failureKey);
         $now = now()->timestamp;
 
@@ -285,17 +297,17 @@ class OtpService
         }
 
         Cache::put($failureKey, [
-            'count'      => $count,
+            'count' => $count,
             'expires_at' => $expiresAt,
         ], $remainingTtl);
     }
 
     /**
-     * Menghitung hash HMAC dari 'role|nomor|kode' menggunakan APP_KEY tanpa kunci cadangan.
+     * Menghitung hash HMAC dari 'role|nomor|purpose|kode' menggunakan APP_KEY tanpa kunci cadangan.
      *
      * @throws OtpConfigurationException Jika APP_KEY kosong.
      */
-    protected function hashKode(string $role, string $normalizedPhone, string $kode): string
+    protected function hashKode(string $role, string $normalizedPhone, string $kode, string $purpose = 'reset'): string
     {
         $appKey = config('app.key');
 
@@ -307,6 +319,6 @@ class OtpService
             $appKey = base64_decode(substr($appKey, 7));
         }
 
-        return hash_hmac('sha256', "{$role}|{$normalizedPhone}|{$kode}", $appKey);
+        return hash_hmac('sha256', "{$role}|{$normalizedPhone}|{$purpose}|{$kode}", $appKey);
     }
 }

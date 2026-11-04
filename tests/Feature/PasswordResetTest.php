@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Petugas;
 use App\Services\AccountDirectory;
 use App\Services\OtpSender;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -12,21 +14,31 @@ use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected FakeOtpSender $fakeSender;
 
     protected function setUp(): void
     {
         parent::setUp();
         Cache::flush();
-        RateLimiter::clear('password_reset:phone:pengelola:6281234567890');
-        RateLimiter::clear('password_reset:phone:pengelola:6281211111111');
-        RateLimiter::clear('password_reset:phone:pengelola:6281222222222');
-        RateLimiter::clear('password_reset:phone:pengelola:6281211112222');
+        RateLimiter::clear('password_reset:phone:petugas:6281234567890');
+        RateLimiter::clear('password_reset:phone:petugas:6281211111111');
+        RateLimiter::clear('password_reset:phone:petugas:6281222222222');
+        RateLimiter::clear('password_reset:phone:petugas:6281211112222');
         RateLimiter::clear('password_reset:ip:127.0.0.1');
 
-        $this->fakeSender = new FakeOtpSender();
+        $this->fakeSender = new FakeOtpSender;
         $this->app->instance(OtpSender::class, $this->fakeSender);
         config(['metanoia.otp.driver' => 'fake']);
+
+        // Sediakan default petugas untuk test yang membutuhkan user terdaftar
+        $petugas = new Petugas([
+            'nama' => 'Petugas Default',
+            'no_telp' => '6281234567890',
+            'password' => 'secret123',
+        ]);
+        $petugas->forceFill(['jabatan' => 'pengelola'])->save();
     }
 
     /**
@@ -35,7 +47,8 @@ class PasswordResetTest extends TestCase
     public function test_alur_sukses_sampai_langkah_3(): void
     {
         // Mock AccountDirectory agar updatePassword mengembalikan true
-        $mockDirectory = new class implements AccountDirectory {
+        $mockDirectory = new class implements AccountDirectory
+        {
             public function exists(string $role, string $phone): bool
             {
                 return true;
@@ -48,11 +61,11 @@ class PasswordResetTest extends TestCase
         };
         $this->app->instance(AccountDirectory::class, $mockDirectory);
 
-        // Langkah 1: Buka halaman lupa password dengan role pengelola
-        $response1 = $this->get(route('password.forgot', ['role' => 'pengelola']));
+        // Langkah 1: Buka halaman lupa password dengan role petugas
+        $response1 = $this->get(route('password.forgot', ['role' => 'petugas']));
         $response1->assertStatus(200);
-        $response1->assertSee(route('login.show', 'pengelola'));
-        $this->assertSame('pengelola', session('reset.role'));
+        $response1->assertSee(route('login.show', 'petugas'));
+        $this->assertSame('petugas', session('reset.role'));
 
         // Langkah 2: Kirim nomor telepon untuk permintaan OTP
         $response2 = $this->post(route('password.send'), [
@@ -79,7 +92,7 @@ class PasswordResetTest extends TestCase
         ]);
         $response3->assertRedirect(route('password.new'));
         $this->assertNotNull(session('reset.verified_until'));
-        $this->assertSame('pengelola', session('reset.verified_role'));
+        $this->assertSame('petugas', session('reset.verified_role'));
         $this->assertSame('6281234567890', session('reset.verified_phone'));
 
         // Buka formulir kata sandi baru
@@ -88,10 +101,10 @@ class PasswordResetTest extends TestCase
 
         // Langkah 4: Simpan kata sandi baru
         $response4 = $this->post(route('password.update'), [
-            'password'              => 'password123',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
-        $response4->assertRedirect(route('login.show', 'pengelola'));
+        $response4->assertRedirect(route('login.show', 'petugas'));
         $response4->assertSessionHas('success');
 
         // Pastikan semua sesi reset.* telah dibersihkan dan tanpa login otomatis
@@ -110,7 +123,8 @@ class PasswordResetTest extends TestCase
      */
     public function test_respons_identik_untuk_nomor_terdaftar_dan_tidak_terdaftar(): void
     {
-        $mockDirectory = new class implements AccountDirectory {
+        $mockDirectory = new class implements AccountDirectory
+        {
             public function exists(string $role, string $phone): bool
             {
                 return $phone === '6281211112222'; // Hanya nomor ini yang terdaftar
@@ -124,15 +138,12 @@ class PasswordResetTest extends TestCase
         $this->app->instance(AccountDirectory::class, $mockDirectory);
 
         // 1. Pengujian dengan nomor terdaftar
-        $this->withSession(['reset.role' => 'pengelola']);
+        $this->withSession(['reset.role' => 'petugas']);
         $respRegistered = $this->post(route('password.send'), ['telepon' => '081211112222']);
         $respRegistered->assertRedirect(route('verification.page'));
-        $registeredResetSession = [
-            'reset.role'  => session('reset.role'),
-            'reset.phone' => session('reset.phone'),
-            'reset.shown' => session('reset.shown'),
-        ];
-        $registeredFlash = session('status');
+        $registeredSessionKeys = array_keys(session()->all());
+        $registeredFlash = session()->get('_flash');
+        $registeredStatus = session('status');
         $this->assertCount(1, $this->fakeSender->messages);
 
         // 2. Pengujian dengan nomor tidak terdaftar
@@ -140,15 +151,12 @@ class PasswordResetTest extends TestCase
         Cache::flush();
         RateLimiter::clear('password_reset:ip:127.0.0.1');
 
-        $this->withSession(['reset.role' => 'pengelola']);
+        $this->withSession(['reset.role' => 'petugas']);
         $respUnregistered = $this->post(route('password.send'), ['telepon' => '081299998888']);
         $respUnregistered->assertRedirect(route('verification.page'));
-        $unregisteredResetSession = [
-            'reset.role'  => session('reset.role'),
-            'reset.phone' => session('reset.phone'),
-            'reset.shown' => session('reset.shown'),
-        ];
-        $unregisteredFlash = session('status');
+        $unregisteredSessionKeys = array_keys(session()->all());
+        $unregisteredFlash = session()->get('_flash');
+        $unregisteredStatus = session('status');
 
         // Nomor tidak terdaftar tidak menerima OTP
         $this->assertCount(0, $this->fakeSender->messages);
@@ -157,13 +165,14 @@ class PasswordResetTest extends TestCase
         $this->assertSame($respRegistered->getStatusCode(), $respUnregistered->getStatusCode());
         $this->assertSame($respRegistered->headers->get('Location'), $respUnregistered->headers->get('Location'));
 
-        // Seluruh kunci session reset.* identik
-        $this->assertSame(array_keys($registeredResetSession), array_keys($unregisteredResetSession));
-        $this->assertSame($registeredResetSession['reset.role'], $unregisteredResetSession['reset.role']);
-        $this->assertSame('6281299998888', $unregisteredResetSession['reset.phone']);
+        // Seluruh kunci session identik
+        $this->assertSame($registeredSessionKeys, $unregisteredSessionKeys);
+        $this->assertSame('petugas', session('reset.role'));
+        $this->assertSame('6281299998888', session('reset.phone'));
 
         // Seluruh pesan flash identik
         $this->assertSame($registeredFlash, $unregisteredFlash);
+        $this->assertSame($registeredStatus, $unregisteredStatus);
     }
 
     /**
@@ -181,7 +190,7 @@ class PasswordResetTest extends TestCase
 
         // Submit password.update tanpa verified_until ditolak
         $resp3 = $this->post(route('password.update'), [
-            'password'              => 'password123',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
         $resp3->assertRedirect(route('password.forgot'));
@@ -193,10 +202,10 @@ class PasswordResetTest extends TestCase
     public function test_flag_kedaluwarsa_setelah_10_menit(): void
     {
         $this->withSession([
-            'reset.role'           => 'pengelola',
-            'reset.phone'          => '6281234567890',
+            'reset.role' => 'petugas',
+            'reset.phone' => '6281234567890',
             'reset.verified_until' => now()->addMinutes(10)->timestamp,
-            'reset.verified_role'  => 'pengelola',
+            'reset.verified_role' => 'petugas',
             'reset.verified_phone' => '6281234567890',
         ]);
 
@@ -211,7 +220,7 @@ class PasswordResetTest extends TestCase
 
         // Submit form juga ditolak
         $this->post(route('password.update'), [
-            'password'              => 'password123',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ])->assertRedirect(route('password.forgot'));
     }
@@ -221,7 +230,7 @@ class PasswordResetTest extends TestCase
      */
     public function test_rate_limiter(): void
     {
-        $this->withSession(['reset.role' => 'pengelola']);
+        $this->withSession(['reset.role' => 'petugas']);
 
         // 5 permintaan pertama untuk nomor yang sama berhasil
         for ($i = 0; $i < 5; $i++) {
@@ -236,14 +245,14 @@ class PasswordResetTest extends TestCase
         // Uji rate limiter per IP: reset IP limiter lalu uji 20 permintaan dengan nomor berbeda
         RateLimiter::clear('password_reset:ip:127.0.0.1');
         for ($i = 10; $i < 30; $i++) {
-            $num = '0812' . str_pad((string) $i, 8, '0', STR_PAD_LEFT);
-            $this->withSession(['reset.role' => 'pengelola']);
+            $num = '0812'.str_pad((string) $i, 8, '0', STR_PAD_LEFT);
+            $this->withSession(['reset.role' => 'petugas']);
             $resp = $this->post(route('password.send'), ['telepon' => $num]);
             $resp->assertRedirect(route('verification.page'));
         }
 
         // Permintaan ke-21 dari IP yang sama ditolak
-        $this->withSession(['reset.role' => 'pengelola']);
+        $this->withSession(['reset.role' => 'petugas']);
         $respIpBlocked = $this->post(route('password.send'), ['telepon' => '081299999999']);
         $respIpBlocked->assertSessionHasErrors(['telepon' => 'Terlalu banyak permintaan']);
     }
@@ -267,7 +276,7 @@ class PasswordResetTest extends TestCase
      */
     public function test_lima_kali_salah_hangus(): void
     {
-        $this->withSession(['reset.role' => 'pengelola']);
+        $this->withSession(['reset.role' => 'petugas']);
         $this->post(route('password.send'), ['telepon' => '081234567890']);
         $code = $this->fakeSender->lastCode();
         $this->assertNotNull($code);
@@ -294,7 +303,7 @@ class PasswordResetTest extends TestCase
      */
     public function test_nomor_berformat_berbeda(): void
     {
-        $this->withSession(['reset.role' => 'pengelola']);
+        $this->withSession(['reset.role' => 'petugas']);
 
         $resp = $this->post(route('password.send'), ['telepon' => '+62 812-3456-7890']);
         $resp->assertRedirect(route('verification.page'));
@@ -308,7 +317,7 @@ class PasswordResetTest extends TestCase
     {
         Log::spy();
 
-        $this->withSession(['reset.role' => 'pengelola']);
+        $this->withSession(['reset.role' => 'petugas']);
         $resp = $this->post(route('password.send'), ['telepon' => '081234567890']);
         $code = $this->fakeSender->lastCode();
         $this->assertNotNull($code);
@@ -343,12 +352,14 @@ class PasswordResetTest extends TestCase
         config(['metanoia.otp.driver' => 'log']);
 
         // Mock AccountDirectory yang tidak boleh dipanggil
-        $mockDir = new class implements AccountDirectory {
+        $mockDir = new class implements AccountDirectory
+        {
             public bool $existsCalled = false;
 
             public function exists(string $role, string $phone): bool
             {
                 $this->existsCalled = true;
+
                 return true;
             }
 
@@ -359,7 +370,7 @@ class PasswordResetTest extends TestCase
         };
         $this->app->instance(AccountDirectory::class, $mockDir);
 
-        $this->withSession(['reset.role' => 'pengelola']);
+        $this->withSession(['reset.role' => 'petugas']);
         $resp = $this->post(route('password.send'), ['telepon' => '081234567890']);
 
         $resp->assertSessionHasErrors(['telepon' => 'Layanan pengiriman kode belum tersedia']);
@@ -372,17 +383,31 @@ class PasswordResetTest extends TestCase
      */
     public function test_update_password_false_tidak_menampilkan_flash_sukses(): void
     {
-        // PendingAccountDirectory default mengembalikan false untuk updatePassword
+        // Mock AccountDirectory mengembalikan false untuk updatePassword
+        $mockDir = new class implements AccountDirectory
+        {
+            public function exists(string $role, string $phone): bool
+            {
+                return true;
+            }
+
+            public function updatePassword(string $role, string $phone, string $hash): bool
+            {
+                return false;
+            }
+        };
+        $this->app->instance(AccountDirectory::class, $mockDir);
+
         $this->withSession([
-            'reset.role'           => 'pengelola',
-            'reset.phone'          => '6281234567890',
+            'reset.role' => 'petugas',
+            'reset.phone' => '6281234567890',
             'reset.verified_until' => now()->addMinutes(10)->timestamp,
-            'reset.verified_role'  => 'pengelola',
+            'reset.verified_role' => 'petugas',
             'reset.verified_phone' => '6281234567890',
         ]);
 
         $resp = $this->post(route('password.update'), [
-            'password'              => 'password123',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
 
@@ -402,7 +427,7 @@ class PasswordResetTest extends TestCase
         $mockDirectory->shouldReceive('exists')->andReturn(true);
 
         // 1. Alur sukses sampai verifikasi nomor A
-        $this->withSession(['reset.role' => 'pengelola']);
+        $this->withSession(['reset.role' => 'petugas']);
         $this->post(route('password.send'), ['telepon' => '081211111111']);
         $codeA = $this->fakeSender->lastCode();
         $this->assertNotNull($codeA);
@@ -424,7 +449,7 @@ class PasswordResetTest extends TestCase
 
         // 4. POST password.update ditolak
         $respPost = $this->post(route('password.update'), [
-            'password'              => 'passwordBaru123',
+            'password' => 'passwordBaru123',
             'password_confirmation' => 'passwordBaru123',
         ]);
         $respPost->assertRedirect(route('password.forgot'));
@@ -438,20 +463,20 @@ class PasswordResetTest extends TestCase
      */
     public function test_verifikasi_lalu_ganti_role_di_forgot_membatalkan_akses_password_new(): void
     {
-        // 1. Selesaikan verifikasi untuk role pengelola
-        $this->withSession(['reset.role' => 'pengelola']);
+        // 1. Selesaikan verifikasi untuk role petugas
+        $this->withSession(['reset.role' => 'petugas']);
         $this->post(route('password.send'), ['telepon' => '081234567890']);
         $code = $this->fakeSender->lastCode();
 
         $this->post(route('verification.check'), ['otp' => str_split($code)]);
         $this->assertNotNull(session('reset.verified_until'));
 
-        // 2. Buka halaman forgot dengan role lain (bendahara)
-        $respForgot = $this->get(route('password.forgot', ['role' => 'bendahara']));
+        // 2. Buka halaman forgot dengan role lain (nasabah)
+        $respForgot = $this->get(route('password.forgot', ['role' => 'nasabah']));
         $respForgot->assertStatus(200);
 
         // Seluruh reset.* sebelumnya terhapus, kecuali reset.role baru
-        $this->assertSame('bendahara', session('reset.role'));
+        $this->assertSame('nasabah', session('reset.role'));
         $this->assertNull(session('reset.verified_until'));
         $this->assertNull(session('reset.verified_role'));
         $this->assertNull(session('reset.verified_phone'));
@@ -466,7 +491,8 @@ class PasswordResetTest extends TestCase
      */
     public function test_flag_dan_semua_reset_terhapus_setelah_update_password_sukses(): void
     {
-        $mockDirectory = new class implements AccountDirectory {
+        $mockDirectory = new class implements AccountDirectory
+        {
             public function exists(string $role, string $phone): bool
             {
                 return true;
@@ -480,20 +506,20 @@ class PasswordResetTest extends TestCase
         $this->app->instance(AccountDirectory::class, $mockDirectory);
 
         $this->withSession([
-            'reset.role'           => 'pengelola',
-            'reset.phone'          => '6281234567890',
-            'reset.shown'          => '0812******90',
+            'reset.role' => 'petugas',
+            'reset.phone' => '6281234567890',
+            'reset.shown' => '0812******90',
             'reset.verified_until' => now()->addMinutes(10)->timestamp,
-            'reset.verified_role'  => 'pengelola',
+            'reset.verified_role' => 'petugas',
             'reset.verified_phone' => '6281234567890',
         ]);
 
         $resp = $this->post(route('password.update'), [
-            'password'              => 'password123',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
 
-        $resp->assertRedirect(route('login.show', 'pengelola'));
+        $resp->assertRedirect(route('login.show', 'petugas'));
         $resp->assertSessionHas('success');
 
         $this->assertNull(session('reset.role'));
@@ -509,14 +535,28 @@ class PasswordResetTest extends TestCase
      */
     public function test_error_telepon_tampil_di_respons_lupa_password(): void
     {
-        $this->withSession(['reset.role' => 'pengelola']);
+        $this->withSession(['reset.role' => 'petugas']);
 
         // Input telepon tidak valid dan ikuti redirect untuk memastikan pesan error tampil
-        $resp = $this->from(route('password.forgot', ['role' => 'pengelola']))
+        $resp = $this->from(route('password.forgot', ['role' => 'petugas']))
             ->followingRedirects()
             ->post(route('password.send'), ['telepon' => '12345']);
 
         $resp->assertStatus(200);
         $resp->assertSee('Nomor telepon tidak valid.');
+    }
+
+    /**
+     * Validasi nomor telepon maksimal 20 karakter.
+     */
+    public function test_validasi_telepon_maksimal_20_karakter(): void
+    {
+        $this->withSession(['reset.role' => 'petugas']);
+
+        $resp = $this->post(route('password.send'), [
+            'telepon' => '081234567890123456789', // 21 karakter
+        ]);
+
+        $resp->assertSessionHasErrors(['telepon' => 'Nomor telepon maksimal 20 karakter.']);
     }
 }

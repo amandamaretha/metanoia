@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class LoginRouteTest extends TestCase
@@ -12,24 +11,24 @@ class LoginRouteTest extends TestCase
         $response = $this->get('/');
 
         $response->assertStatus(200);
-        $response->assertSee(route('login.show', config('metanoia.portals.pengelola')));
-        $response->assertSee(route('login.show', config('metanoia.portals.bendahara')));
+        $response->assertSee(route('login.show', config('metanoia.portals.petugas')));
+        $response->assertSee(route('login.show', config('metanoia.portals.nasabah')));
     }
 
-    public function test_halaman_login_role_pengelola_berhasil_dibuka(): void
+    public function test_halaman_login_role_petugas_berhasil_dibuka(): void
     {
-        $response = $this->get(route('login.show', config('metanoia.portals.pengelola')));
+        $response = $this->get(route('login.show', config('metanoia.portals.petugas')));
 
         $response->assertStatus(200);
-        $response->assertSee(config('metanoia.portal_labels.pengelola'));
+        $response->assertSee(config('metanoia.portal_labels.petugas'));
     }
 
-    public function test_halaman_login_role_bendahara_berhasil_dibuka(): void
+    public function test_halaman_login_role_nasabah_berhasil_dibuka(): void
     {
-        $response = $this->get(route('login.show', config('metanoia.portals.bendahara')));
+        $response = $this->get(route('login.show', config('metanoia.portals.nasabah')));
 
         $response->assertStatus(200);
-        $response->assertSee(config('metanoia.portal_labels.bendahara'));
+        $response->assertSee(config('metanoia.portal_labels.nasabah'));
     }
 
     public function test_role_tidak_dikenal_menghasilkan_404(): void
@@ -39,24 +38,23 @@ class LoginRouteTest extends TestCase
         $response->assertStatus(404);
     }
 
-    /**
-     * Pengujian sementara login pengelola dengan mock-auth sebelum migrasi penuh ke verifikasi OTP.
-     */
-    #[Group('mock-auth')]
-    public function test_post_login_pengelola_redirect_ke_dashboard(): void
+    public function test_role_lama_pengelola_dan_bendahara_menghasilkan_404(): void
     {
-        $response = $this->post(route('login.attempt', config('metanoia.portals.pengelola')));
-
-        $response->assertRedirect(route('pengelola.dashboard'));
+        $this->get('/login/pengelola')->assertStatus(404);
+        $this->get('/login/bendahara')->assertStatus(404);
     }
 
-    public function test_post_login_bendahara_validasi_field_telepon(): void
+    public function test_post_login_petugas_tanpa_data_menghasilkan_error_validasi(): void
     {
-        $response = $this->post(route('login.attempt', config('metanoia.portals.bendahara')), []);
+        $response = $this->post(route('login.attempt', config('metanoia.portals.petugas')), []);
 
-        $response->assertSessionHasErrors([
-            config('metanoia.phone_field'),
-            'password',
-        ]);
+        $response->assertSessionHasErrors(['telepon', 'password']);
+    }
+
+    public function test_post_login_nasabah_tanpa_data_menghasilkan_error_validasi(): void
+    {
+        $response = $this->post(route('login.attempt', config('metanoia.portals.nasabah')), []);
+
+        $response->assertSessionHasErrors(['telepon', 'password']);
     }
 }

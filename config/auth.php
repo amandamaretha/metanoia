@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Nasabah;
+use App\Models\Petugas;
 use App\Models\User;
 
 return [
@@ -42,6 +44,14 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'petugas' => [
+            'driver' => 'session',
+            'provider' => 'petugas',
+        ],
+        'nasabah' => [
+            'driver' => 'session',
+            'provider' => 'nasabah',
+        ],
     ],
 
     /*
@@ -65,6 +75,14 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+        'petugas' => [
+            'driver' => 'eloquent',
+            'model' => Petugas::class,
+        ],
+        'nasabah' => [
+            'driver' => 'eloquent',
+            'model' => Nasabah::class,
         ],
 
         // 'users' => [

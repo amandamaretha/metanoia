@@ -326,12 +326,6 @@
                 </p>
             @endif
 
-            @if (session('status'))
-                <p class="success-message">
-                    {{ session('status') }}
-                </p>
-            @endif
-
             <div class="form-group">
                 <div class="password-wrapper">
                     <input
