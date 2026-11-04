@@ -11,6 +11,8 @@ use App\Services\SetoranService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use InvalidArgumentException;
 
@@ -36,10 +38,15 @@ class PenimbanganController extends Controller
                     $sub->whereNull('tanggal_berakhir')
                         ->orWhere('tanggal_berakhir', '>=', $today);
                 })
-                ->latest('tanggal_mulai');
+                ->orderByDesc('tanggal_mulai')
+                ->orderByDesc('id');
         }])->get();
 
-        return view('dashboard.penimbangan', compact('nasabahList', 'jenisSampahList'));
+        // Token idempotensi sekali pakai untuk form penimbangan
+        $idempotencyToken = (string) Str::uuid();
+        Cache::put("idempotency:setoran:{$idempotencyToken}", true, now()->addHours(2));
+
+        return view('dashboard.penimbangan', compact('nasabahList', 'jenisSampahList', 'idempotencyToken'));
     }
 
     /**
@@ -86,7 +93,8 @@ class PenimbanganController extends Controller
                 $query->whereNull('tanggal_berakhir')
                     ->orWhere('tanggal_berakhir', '>=', $today);
             })
-            ->latest('tanggal_mulai')
+            ->orderByDesc('tanggal_mulai')
+            ->orderByDesc('id')
             ->first();
 
         if (! $harga) {
@@ -113,8 +121,19 @@ class PenimbanganController extends Controller
             'kondisi' => ['required', 'string', 'in:sudah_dipilah,belum_dipilah,campuran'],
             'berat' => ['required', 'numeric', 'gt:0'],
         ], [
+            'jenis_sampah_id.exists' => 'Jenis sampah yang dipilih tidak valid.',
+            'kondisi.in' => 'Kondisi sampah tidak valid.',
             'berat.gt' => 'Berat sampah harus lebih besar dari 0 kilogram.',
         ]);
+
+        // Cek dan konsumsi token idempotensi atomik
+        $idempotencyToken = $request->input('idempotency_token');
+        if (! $idempotencyToken || ! Cache::pull("idempotency:setoran:{$idempotencyToken}")) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Setoran ini sudah diproses.',
+            ], 422);
+        }
 
         $petugasId = (int) Auth::guard('petugas')->id();
 
@@ -127,6 +146,10 @@ class PenimbanganController extends Controller
                 $validated['berat']
             );
 
+            // Buat token baru untuk transaksi berikutnya jika ada
+            $nextToken = (string) Str::uuid();
+            Cache::put("idempotency:setoran:{$nextToken}", true, now()->addHours(2));
+
             return response()->json([
                 'success' => true,
                 'message' => 'Setoran Berhasil',
@@ -135,9 +158,13 @@ class PenimbanganController extends Controller
                     'nomor_nota' => $result['nota']->nomor,
                     'total_nilai' => $result['setoran']->total_nilai,
                     'saldo_terbaru' => $result['nasabah']->saldo,
+                    'next_idempotency_token' => $nextToken,
                 ],
             ]);
         } catch (InvalidArgumentException $e) {
+            // Pulihkan token jika gagal validasi domain logic agar dapat dicoba lagi
+            Cache::put("idempotency:setoran:{$idempotencyToken}", true, now()->addHours(2));
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),

@@ -8,7 +8,6 @@ use App\Models\Nasabah;
 use App\Models\Nota;
 use App\Models\Setoran;
 use App\Support\TransactionCalculator;
-use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -19,13 +18,14 @@ class SetoranService
     /**
      * SetoranService dalam satu DB::transaction dengan lockForUpdate pada nasabah:
      * - Cek status nasabah (harus aktif)
-     * - Validasi berat (> 0)
-     * - Ambil harga aktif hari ini
-     * - Hitung total nilai menggunakan TransactionCalculator
-     * - Simpan setoran dengan harga snapshot
+     * - Validasi berat (> 0, maksimal 2 desimal tanpa float)
+     * - Ambil harga aktif hari ini (urut tanggal_mulai desc, id desc)
+     * - Hitung total nilai menggunakan TransactionCalculator dengan pembulatan kelipatan
+     * - Tolak jika nilai terbulatkan 0 ("Nilai setoran terlalu kecil.")
+     * - Simpan setoran dengan nilai_sebelum_pembulatan, pembulatan, dan total_nilai
      * - Tambah saldo nasabah
      * - Tulis mutasi_saldo (jenis setoran, saldo_sesudah)
-     * - Buat nota dengan nomor unik yang aman dari balapan (retry loop)
+     * - Buat nota dengan nomor unik yang aman dari balapan (retry loop khusus UniqueConstraintViolationException)
      * Invarian: saldo nasabah = saldo_sesudah mutasi terakhir.
      *
      * @return array{setoran: Setoran, nota: Nota, mutasi: MutasiSaldo, nasabah: Nasabah}
@@ -45,9 +45,12 @@ class SetoranService
         }
 
         $source = $weighingSource ?? new ManualWeighingSource;
-        $berat = $source->getWeight(['berat' => $beratInput]);
+        $beratRaw = $source->getWeight(['berat' => $beratInput]);
 
-        if ($berat <= 0) {
+        // Normalisasi dan validasi berat tanpa operasi float (maksimal 2 desimal)
+        $beratStr = TransactionCalculator::normalizeWeight($beratRaw);
+
+        if (bccomp($beratStr, '0', 4) <= 0) {
             throw new InvalidArgumentException('Berat sampah harus lebih besar dari 0 kilogram.');
         }
 
@@ -59,7 +62,8 @@ class SetoranService
                 $query->whereNull('tanggal_berakhir')
                     ->orWhere('tanggal_berakhir', '>=', $today);
             })
-            ->latest('tanggal_mulai')
+            ->orderByDesc('tanggal_mulai')
+            ->orderByDesc('id')
             ->first();
 
         if (! $hargaAktif) {
@@ -67,15 +71,26 @@ class SetoranService
         }
 
         $hargaPerKg = $hargaAktif->harga_per_kg;
-        $totalNilai = TransactionCalculator::calculate($berat, $hargaPerKg);
+
+        // Hitung nilai terbulatkan dan rincian pembulatan
+        $calc = TransactionCalculator::calculateDetails($beratStr, $hargaPerKg);
+        $nilaiSebelumPembulatan = $calc['nilai_sebelum_pembulatan'];
+        $pembulatan = $calc['pembulatan'];
+        $totalNilai = $calc['total_nilai'];
+
+        if ($totalNilai <= 0) {
+            throw new InvalidArgumentException('Nilai setoran terlalu kecil.');
+        }
 
         return DB::transaction(function () use (
             $nasabahId,
             $petugasId,
             $jenisSampahId,
             $kondisi,
-            $berat,
+            $beratStr,
             $hargaPerKg,
+            $nilaiSebelumPembulatan,
+            $pembulatan,
             $totalNilai
         ) {
             /** @var Nasabah $nasabah */
@@ -90,13 +105,15 @@ class SetoranService
                 'petugas_id' => $petugasId,
                 'jenis_sampah_id' => $jenisSampahId,
                 'kondisi' => $kondisi,
-                'berat' => $berat,
+                'berat' => $beratStr,
                 'harga_per_kg' => $hargaPerKg,
+                'nilai_sebelum_pembulatan' => $nilaiSebelumPembulatan,
+                'pembulatan' => $pembulatan,
                 'total_nilai' => $totalNilai,
                 'tanggal' => now(),
             ]);
 
-            // Tambah saldo nasabah
+            // Tambah saldo nasabah memakai total_nilai terbulatkan
             $nasabah->saldo += $totalNilai;
             $nasabah->save();
 
@@ -110,7 +127,7 @@ class SetoranService
                 'referensi_id' => $setoran->id,
             ]);
 
-            // Buat nota dengan nomor unik aman balapan (retry loop)
+            // Buat nota dengan nomor unik aman balapan (retry loop khusus UniqueConstraintViolationException)
             $nota = $this->createUniqueNota($setoran->id);
 
             return [
@@ -123,7 +140,7 @@ class SetoranService
     }
 
     /**
-     * Buat nota baru dengan nomor unik, menerapkan retry jika terjadi race condition (tabrakan nomor).
+     * Buat nota baru dengan nomor unik, hanya melakukan retry jika terjadi tabrakan nomor unik (UniqueConstraintViolationException).
      */
     protected function createUniqueNota(int $setoranId, int $maxAttempts = 5): Nota
     {
@@ -139,7 +156,7 @@ class SetoranService
                     'nomor' => $nomor,
                     'tanggal' => now(),
                 ]);
-            } catch (UniqueConstraintViolationException|QueryException $e) {
+            } catch (UniqueConstraintViolationException $e) {
                 if ($attempts >= $maxAttempts) {
                     throw $e;
                 }

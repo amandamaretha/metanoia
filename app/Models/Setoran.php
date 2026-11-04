@@ -20,6 +20,8 @@ class Setoran extends Model
         'kondisi',
         'berat',
         'harga_per_kg',
+        'nilai_sebelum_pembulatan',
+        'pembulatan',
         'total_nilai',
         'tanggal',
     ];
@@ -29,6 +31,8 @@ class Setoran extends Model
         return [
             'berat' => 'decimal:2',
             'harga_per_kg' => 'integer',
+            'nilai_sebelum_pembulatan' => 'integer',
+            'pembulatan' => 'integer',
             'total_nilai' => 'integer',
             'tanggal' => 'datetime',
         ];

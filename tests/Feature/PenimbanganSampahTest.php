@@ -15,6 +15,7 @@ use App\Services\SetoranService;
 use App\Support\TransactionCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Tests\TestCase;
 
@@ -279,12 +280,16 @@ class PenimbanganSampahTest extends TestCase
      */
     public function test_konfirmasi_setoran_berhasil_via_http(): void
     {
+        $token = 'token-setoran-test-'.Str::random(10);
+        Cache::put("idempotency:setoran:{$token}", true, 60);
+
         $response = $this->actingAs($this->petugasPengelola, 'petugas')
             ->postJson(route('pengelola.penimbangan.store'), [
                 'nasabah_id' => $this->nasabahAktif->id,
                 'jenis_sampah_id' => $this->jenisSampah->id,
                 'kondisi' => 'sudah_dipilah',
                 'berat' => 3.5,
+                'idempotency_token' => $token,
             ]);
 
         $response->assertStatus(200)
@@ -293,7 +298,7 @@ class PenimbanganSampahTest extends TestCase
                 'message' => 'Setoran Berhasil',
             ])
             ->assertJsonStructure([
-                'data' => ['setoran_id', 'nomor_nota', 'total_nilai', 'saldo_terbaru'],
+                'data' => ['setoran_id', 'nomor_nota', 'total_nilai', 'saldo_terbaru', 'next_idempotency_token'],
             ]);
 
         $this->assertDatabaseHas('nota', [
@@ -499,11 +504,15 @@ class PenimbanganSampahTest extends TestCase
         $hargaPerKg = 3500;
         $totalNilai = (int) ($berat * $hargaPerKg); // 7.000
 
+        $token = 'test-idemp-'.Str::random(10);
+        Cache::put("idempotency:setoran:{$token}", true, 60);
+
         $payload = [
             'nasabah_id' => $this->nasabahAktif->id,
             'jenis_sampah_id' => $produkBaru->id,
             'kondisi' => 'sudah_dipilah',
             'berat' => $berat,
+            'idempotency_token' => $token,
         ];
 
         $post1 = $this->actingAs($this->petugasPengelola, 'petugas')
@@ -530,17 +539,74 @@ class PenimbanganSampahTest extends TestCase
         $nomorNota1 = $post1->json('data.nomor_nota');
         $this->assertDatabaseHas('nota', ['nomor' => $nomorNota1]);
 
-        // 4. Kirim ulang POST yang sama (klik ganda)
+        // 4. Kirim ulang POST yang sama (klik ganda / idempotensi)
         $post2 = $this->actingAs($this->petugasPengelola, 'petugas')
             ->postJson(route('pengelola.penimbangan.store'), $payload);
 
-        // Verifikasi apakah membuat setoran kedua (TEMUAN: double submit menghasilkan setoran ganda)
-        $post2->assertStatus(200);
+        // Verifikasi ditolak karena token sudah terpakai
+        $post2->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Setoran ini sudah diproses.',
+            ]);
+
         $jumlahSetoran = Setoran::where('nasabah_id', $this->nasabahAktif->id)
             ->where('jenis_sampah_id', $produkBaru->id)
             ->count();
 
-        $this->assertSame(2, $jumlahSetoran, 'Klik ganda membuat setoran kedua (TEMUAN yang akan diperbaiki di Fase 10A).');
-        $this->assertSame($saldoAwal + ($totalNilai * 2), $this->nasabahAktif->fresh()->saldo);
+        // Saldo hanya naik satu kali dan hanya satu setoran dibuat
+        $this->assertSame(1, $jumlahSetoran);
+        $this->assertSame($saldoAwal + $totalNilai, $this->nasabahAktif->fresh()->saldo);
+    }
+
+    /**
+     * 14. Idempotensi setoran: kirim dua kali menghasilkan satu setoran dan saldo naik sekali.
+     */
+    public function test_idempotensi_kirim_dua_kali_menghasilkan_satu_setoran_dan_saldo_naik_sekali(): void
+    {
+        $token = 'idempotency-token-'.Str::random(12);
+        Cache::put("idempotency:setoran:{$token}", true, 60);
+
+        $saldoAwal = $this->nasabahAktif->saldo;
+        $berat = 2.0;
+        $hargaPerKg = 4000;
+        $totalNilai = TransactionCalculator::calculate($berat, $hargaPerKg); // 8.000
+
+        $payload = [
+            'nasabah_id' => $this->nasabahAktif->id,
+            'jenis_sampah_id' => $this->jenisSampah->id,
+            'kondisi' => 'sudah_dipilah',
+            'berat' => $berat,
+            'idempotency_token' => $token,
+        ];
+
+        // Pengiriman pertama
+        $res1 = $this->actingAs($this->petugasPengelola, 'petugas')
+            ->postJson(route('pengelola.penimbangan.store'), $payload);
+
+        $res1->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Setoran Berhasil',
+            ]);
+
+        // Pengiriman kedua dengan token yang sama (double click / replay)
+        $res2 = $this->actingAs($this->petugasPengelola, 'petugas')
+            ->postJson(route('pengelola.penimbangan.store'), $payload);
+
+        $res2->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Setoran ini sudah diproses.',
+            ]);
+
+        // Verifikasi setoran hanya 1
+        $count = Setoran::where('nasabah_id', $this->nasabahAktif->id)
+            ->where('jenis_sampah_id', $this->jenisSampah->id)
+            ->count();
+        $this->assertSame(1, $count);
+
+        // Saldo nasabah hanya naik sekali
+        $this->assertSame($saldoAwal + $totalNilai, $this->nasabahAktif->fresh()->saldo);
     }
 }

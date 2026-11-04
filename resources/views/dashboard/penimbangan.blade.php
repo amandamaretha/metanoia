@@ -510,6 +510,7 @@
         let selectedKondisi = 'sudah_dipilah';
         let currentHargaPerKg = 0;
         let currentBerat = 0.00;
+        let currentIdempotencyToken = '{{ $idempotencyToken ?? '' }}';
 
         // State Sesi QR
         let activeQrToken = null;
@@ -852,7 +853,8 @@
                         nasabah_id: selectedNasabah.id,
                         jenis_sampah_id: selectedSampah.id,
                         kondisi: selectedKondisi,
-                        berat: currentBerat
+                        berat: currentBerat,
+                        idempotency_token: currentIdempotencyToken
                     })
                 });
 
@@ -861,6 +863,9 @@
                 if (response.ok && res.success) {
                     // Update Saldo Nasabah Lokal
                     selectedNasabah.saldo = res.data.saldo_terbaru;
+                    if (res.data && res.data.next_idempotency_token) {
+                        currentIdempotencyToken = res.data.next_idempotency_token;
+                    }
 
                     document.getElementById("suksesNomorNota").innerText = res.data.nomor_nota;
                     document.getElementById("suksesTotalNilai").innerText = "Rp " + formatRupiah(res.data.total_nilai);

@@ -25,10 +25,6 @@
                 </div>
 
                 <nav class="px-4 space-y-2">
-                    <a href="{{ route('bendahara.beranda') }}" class="flex items-center px-4 py-3 hover:bg-white/10 rounded-lg font-semibold transition-colors">
-                        <i class="fa-solid fa-house w-6"></i>
-                        <span>Beranda</span>
-                    </a>
                     <a href="{{ route('bendahara.transaksi') }}" class="flex items-center px-4 py-3 hover:bg-white/10 rounded-lg font-semibold transition-colors">
                         <i class="fa-solid fa-money-bill-transfer w-6"></i>
                         <span>Tambah Transaksi</span>

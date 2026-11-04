@@ -74,4 +74,18 @@ return [
     'penjualan' => [
         'batas_minimum_kg' => 100,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pembulatan Nilai Setoran
+    |--------------------------------------------------------------------------
+    |
+    | Kelipatan pembulatan rupiah (default: 100).
+    | Mode pembulatan: 'terdekat' (setengah ke atas / half-up).
+    |
+    */
+    'pembulatan' => [
+        'kelipatan' => 100,
+        'mode' => 'terdekat',
+    ],
 ];

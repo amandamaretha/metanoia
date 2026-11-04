@@ -117,7 +117,8 @@ class JenisSampahController extends Controller
                 $hargaAktif = HargaSampah::where('jenis_sampah_id', $jenisSampah->id)
                     ->where('kondisi', $kondisi)
                     ->whereNull('tanggal_berakhir')
-                    ->latest('tanggal_mulai')
+                    ->orderByDesc('tanggal_mulai')
+                    ->orderByDesc('id')
                     ->first();
 
                 if (! $hargaAktif) {
@@ -129,19 +130,27 @@ class JenisSampahController extends Controller
                         'tanggal_berakhir' => null,
                     ]);
                 } elseif ($hargaAktif->harga_per_kg !== $hargaBaru) {
-                    // Tutup baris lama dengan mengisi tanggal_berakhir
-                    $hargaAktif->update([
-                        'tanggal_berakhir' => $today,
-                    ]);
+                    $isCreatedToday = $hargaAktif->tanggal_mulai && \Carbon\Carbon::parse($hargaAktif->tanggal_mulai)->toDateString() === $today;
+                    if ($isCreatedToday) {
+                        // Jika sudah ada harga yang mulai hari ini, perbarui nilainya langsung agar tidak menyisakan dua harga aktif di hari yang sama
+                        $hargaAktif->update([
+                            'harga_per_kg' => $hargaBaru,
+                        ]);
+                    } else {
+                        // Tutup baris lama dengan tanggal berakhir kemarin agar hari ini hanya harga baru yang aktif
+                        $hargaAktif->update([
+                            'tanggal_berakhir' => now()->subDay()->toDateString(),
+                        ]);
 
-                    // Buat baris baru untuk riwayat harga
-                    HargaSampah::create([
-                        'jenis_sampah_id' => $jenisSampah->id,
-                        'kondisi' => $kondisi,
-                        'harga_per_kg' => $hargaBaru,
-                        'tanggal_mulai' => $today,
-                        'tanggal_berakhir' => null,
-                    ]);
+                        // Buat baris baru untuk riwayat harga
+                        HargaSampah::create([
+                            'jenis_sampah_id' => $jenisSampah->id,
+                            'kondisi' => $kondisi,
+                            'harga_per_kg' => $hargaBaru,
+                            'tanggal_mulai' => $today,
+                            'tanggal_berakhir' => null,
+                        ]);
+                    }
                 }
             }
         });

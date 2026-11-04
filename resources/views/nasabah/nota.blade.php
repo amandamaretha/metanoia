@@ -86,6 +86,15 @@
                     </div>
                 </div>
 
+                <div class="flex justify-between text-sm pt-2">
+                    <span class="text-gray-500">Subtotal:</span>
+                    <span class="font-mono text-xs text-gray-700">Rp {{ number_format($nota->setoran->nilai_sebelum_pembulatan, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Pembulatan:</span>
+                    <span class="font-mono text-xs text-gray-700">{{ ($nota->setoran->pembulatan >= 0 ? '+' : '') }}Rp {{ number_format($nota->setoran->pembulatan, 0, ',', '.') }}</span>
+                </div>
+
                 <div class="pt-3 flex justify-between items-center text-lg">
                     <span class="font-extrabold text-gray-900">Total Nilai:</span>
                     <span class="font-black text-2xl text-emerald-700">Rp {{ number_format($nota->setoran->total_nilai, 0, ',', '.') }}</span>
