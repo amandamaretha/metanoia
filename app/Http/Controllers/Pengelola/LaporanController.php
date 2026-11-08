@@ -219,12 +219,37 @@ class LaporanController extends Controller
 
         $riwayatPenjualan = $query->paginate(15)->withQueryString();
 
+        // Rincian stok berdasarkan kategori jenis sampah
+        $rincianStokRaw = DB::table('setoran')
+            ->join('jenis_sampah', 'setoran.jenis_sampah_id', '=', 'jenis_sampah.id')
+            ->select('jenis_sampah.kategori', DB::raw('SUM(setoran.berat) as total_berat'))
+            ->groupBy('jenis_sampah.kategori')
+            ->pluck('total_berat', 'jenis_sampah.kategori')
+            ->toArray();
+
+        $knownCategories = ['Plastik', 'Kertas', 'Logam', 'Kaca'];
+        $lainnyaBerat = 0.0;
+        foreach ($rincianStokRaw as $kat => $berat) {
+            if (! in_array($kat, $knownCategories, true)) {
+                $lainnyaBerat += (float) $berat;
+            }
+        }
+
+        $rincianStok = [
+            'Plastik' => (float) ($rincianStokRaw['Plastik'] ?? 0.0),
+            'Kertas' => (float) ($rincianStokRaw['Kertas'] ?? 0.0),
+            'Logam' => (float) ($rincianStokRaw['Logam'] ?? 0.0),
+            'Kaca' => (float) ($rincianStokRaw['Kaca'] ?? 0.0),
+            'Lainnya' => $lainnyaBerat,
+        ];
+
         return view('dashboard.penjualan', compact(
             'stokSaatIni',
             'batasMinimumKg',
             'progresPersen',
             'kurangKg',
             'riwayatPenjualan',
+            'rincianStok',
             'search',
             'startDate',
             'endDate'

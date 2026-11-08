@@ -25,7 +25,7 @@
                     <div class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/20">
                         <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
                     </div>
-                    <h2 class="mt-4 text-lg font-bold">Ammirudin suep</h2>
+                    <h2 class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
                 </div>
 
                 <nav class="px-4 space-y-2">
@@ -36,10 +36,6 @@
                     <a href="{{ route('pengelola.nasabah') }}" class="flex items-center px-4 py-3 hover:bg-white/10 rounded-lg font-semibold transition-colors">
                         <i class="fa-solid fa-users w-6"></i>
                         <span>Nasabah</span>
-                    </a>
-                    <a href="{{ route('pengelola.transaksi') }}" class="flex items-center px-4 py-3 hover:bg-white/10 rounded-lg font-semibold transition-colors">
-                        <i class="fa-solid fa-money-bill-transfer w-6"></i>
-                        <span>Transaksi</span>
                     </a>
                     <a href="{{ route('pengelola.penimbangan') }}" class="flex items-center px-4 py-3 rounded-lg transition-colors {{ Request::routeIs('pengelola.penimbangan') ? 'bg-gray-100 text-sidebar-active font-bold' : 'hover:bg-white/10 font-semibold' }}">
                         <i class="fa-solid fa-scale-balanced w-6"></i>
@@ -73,6 +69,26 @@
             <div id="mainView">
                 <h1 class="text-[36px] font-extrabold text-black mb-6">Laporan</h1>
 
+                @if (session('success'))
+                    <div class="max-w-5xl mx-auto mb-6 p-4 rounded-lg bg-green-100 border border-green-300 text-green-800 text-sm font-semibold">
+                        {{ session('success') }}
+                    </div>
+                @endif
+                @if (session('error'))
+                    <div class="max-w-5xl mx-auto mb-6 p-4 rounded-lg bg-red-100 border border-red-300 text-red-800 text-sm font-semibold">
+                        {{ session('error') }}
+                    </div>
+                @endif
+                @if ($errors->any())
+                    <div class="max-w-5xl mx-auto mb-6 p-4 rounded-lg bg-red-100 border border-red-300 text-red-800 text-sm font-semibold">
+                        <ul class="list-disc list-inside">
+                            @foreach ($errors->all() as $err)
+                                <li>{{ $err }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <!-- TAB MENU -->
                 <div class="flex w-full max-w-5xl mx-auto mb-6 rounded-[10px] border-[1.5px] border-gray-300 overflow-hidden bg-white shadow-sm">
                     <a href="{{ route('pengelola.laporan') }}" class="w-1/2 text-center py-3 text-[22px] font-bold text-black bg-white hover:bg-gray-100 transition border-r border-gray-300">
@@ -99,40 +115,44 @@
                                 <h3 class="font-bold text-black text-lg">Persiapan Penjualan ke BSI</h3>
                             </div>
                             <div class="mb-2">
-                                <span class="text-3xl font-extrabold text-black">85 Kg</span>
-                                <span class="text-3xl font-bold text-gray-400"> / 100 Kg</span>
+                                <span class="text-3xl font-extrabold text-black">{{ number_format($stokSaatIni ?? 0, 1, ',', '.') }} Kg</span>
+                                <span class="text-3xl font-bold text-gray-400"> / {{ number_format($batasMinimumKg ?? 100, 0, ',', '.') }} Kg</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-5 mb-2 border border-gray-300">
-                                <div class="bg-[#81C784] h-full rounded-full" style="width: 85%"></div>
+                                <div class="bg-[#81C784] h-full rounded-full" style="width: {{ min(100, max(0, $progresPersen ?? 0)) }}%"></div>
                             </div>
-                            <p class="text-[11px] text-gray-600 font-medium">Masih membutuhkan 15 Kg untuk mencapai batas minimum pengangkutan</p>
+                            @if (($kurangKg ?? 0) > 0)
+                                <p class="text-[11px] text-gray-600 font-medium">Masih membutuhkan {{ number_format($kurangKg, 1, ',', '.') }} Kg untuk mencapai batas minimum pengangkutan</p>
+                            @else
+                                <p class="text-[11px] text-green-700 font-bold">Stok telah mencapai batas minimum pengangkutan ({{ number_format($batasMinimumKg ?? 100, 0, ',', '.') }} Kg)</p>
+                            @endif
                         </div>
 
                         <div class="w-full md:w-7/12 bg-white border border-[#F3C78B] rounded-xl p-4 flex flex-col">
                             <div class="flex justify-between items-center mb-4">
                                 <h4 class="font-bold text-black text-sm">Rincian stok saat ini</h4>
-                                <h4 class="font-bold text-black text-sm">Total : 85 Kg</h4>
+                                <h4 class="font-bold text-black text-sm">Total : {{ number_format($stokSaatIni ?? 0, 1, ',', '.') }} Kg</h4>
                             </div>
                             <div class="grid grid-cols-5 gap-2 flex-1">
                                 <div class="bg-[#D3D4FA] rounded-md p-2 flex flex-col items-center justify-center text-center">
                                     <span class="text-xs text-gray-700 font-semibold mb-1">Plastik</span>
-                                    <span class="text-sm font-extrabold text-black">32,5 Kg</span>
+                                    <span class="text-sm font-extrabold text-black">{{ number_format($rincianStok['Plastik'] ?? 0, 1, ',', '.') }} Kg</span>
                                 </div>
                                 <div class="bg-[#D3EFE4] rounded-md p-2 flex flex-col items-center justify-center text-center">
                                     <span class="text-xs text-gray-700 font-semibold mb-1">Kertas</span>
-                                    <span class="text-sm font-extrabold text-black">18 Kg</span>
+                                    <span class="text-sm font-extrabold text-black">{{ number_format($rincianStok['Kertas'] ?? 0, 1, ',', '.') }} Kg</span>
                                 </div>
                                 <div class="bg-[#FCE6E6] rounded-md p-2 flex flex-col items-center justify-center text-center">
                                     <span class="text-xs text-gray-700 font-semibold mb-1">Logam</span>
-                                    <span class="text-sm font-extrabold text-black">20 Kg</span>
+                                    <span class="text-sm font-extrabold text-black">{{ number_format($rincianStok['Logam'] ?? 0, 1, ',', '.') }} Kg</span>
                                 </div>
                                 <div class="bg-[#D3F0F4] rounded-md p-2 flex flex-col items-center justify-center text-center">
                                     <span class="text-xs text-gray-700 font-semibold mb-1">Kaca</span>
-                                    <span class="text-sm font-extrabold text-black">10 Kg</span>
+                                    <span class="text-sm font-extrabold text-black">{{ number_format($rincianStok['Kaca'] ?? 0, 1, ',', '.') }} Kg</span>
                                 </div>
                                 <div class="bg-[#FDF1D9] rounded-md p-2 flex flex-col items-center justify-center text-center">
                                     <span class="text-xs text-gray-700 font-semibold mb-1">Lainnya</span>
-                                    <span class="text-sm font-extrabold text-black">4,5 Kg</span>
+                                    <span class="text-sm font-extrabold text-black">{{ number_format($rincianStok['Lainnya'] ?? 0, 1, ',', '.') }} Kg</span>
                                 </div>
                             </div>
                         </div>
@@ -173,32 +193,34 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- Menambahkan event onClick openDetail(this) dan openHapus(this) -->
-                                    <tr class="border-b border-gray-200 hover:bg-gray-50 penjualan-row">
-                                        <td class="py-3 px-2">1</td>
-                                        <td class="py-3 px-4 no-transaksi">T00001</td>
-                                        <td class="py-3 px-4 td-tanggal">28/07/2026</td>
-                                        <td class="py-3 px-4 td-berat">125,5</td>
-                                        <td class="py-3 px-4 td-nilai">400.000</td>
-                                        <td class="py-3 px-4 flex justify-center gap-2">
-                                            <button onclick="openDetail(this)" class="bg-[#5FA8DC] text-white text-xs font-bold py-1.5 px-4 rounded">Detail</button>
-                                            <button onclick="openHapus(this)" class="bg-[#F86363] text-white text-xs font-bold py-1.5 px-4 rounded">Hapus</button>
-                                        </td>
-                                    </tr>
-                                    <tr class="border-b border-gray-200 hover:bg-gray-50 penjualan-row">
-                                        <td class="py-3 px-2">2</td>
-                                        <td class="py-3 px-4 no-transaksi">T00002</td>
-                                        <td class="py-3 px-4 td-tanggal">05/08/2026</td>
-                                        <td class="py-3 px-4 td-berat">110</td>
-                                        <td class="py-3 px-4 td-nilai">340.000</td>
-                                        <td class="py-3 px-4 flex justify-center gap-2">
-                                            <button onclick="openDetail(this)" class="bg-[#5FA8DC] text-white text-xs font-bold py-1.5 px-4 rounded">Detail</button>
-                                            <button onclick="openHapus(this)" class="bg-[#F86363] text-white text-xs font-bold py-1.5 px-4 rounded">Hapus</button>
-                                        </td>
-                                    </tr>
+                                    @forelse ($riwayatPenjualan as $index => $item)
+                                        <tr class="border-b border-gray-200 hover:bg-gray-50 penjualan-row" data-id="{{ $item->id }}">
+                                            <td class="py-3 px-2">{{ $riwayatPenjualan->firstItem() ? ($riwayatPenjualan->firstItem() + $index) : ($index + 1) }}</td>
+                                            <td class="py-3 px-4 no-transaksi font-semibold text-gray-900">{{ $item->nomor ?? ('T' . str_pad($item->id, 5, '0', STR_PAD_LEFT)) }}</td>
+                                            <td class="py-3 px-4 td-tanggal">{{ \Carbon\Carbon::parse($item->tanggal_pengangkutan)->format('d/m/Y') }}</td>
+                                            <td class="py-3 px-4 td-berat">{{ number_format($item->total_berat, 1, ',', '.') }}</td>
+                                            <td class="py-3 px-4 td-nilai">{{ number_format($item->total_nilai, 0, ',', '.') }}</td>
+                                            <td class="py-3 px-4 flex justify-center gap-2">
+                                                <button onclick="openDetail(this)" class="bg-[#5FA8DC] text-white text-xs font-bold py-1.5 px-4 rounded">Detail</button>
+                                                <button onclick="openHapus(this)" class="bg-[#F86363] text-white text-xs font-bold py-1.5 px-4 rounded">Hapus</button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="py-8 text-center text-gray-500 font-medium">
+                                                Belum ada riwayat penjualan pada periode ini.
+                                            </td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
+
+                        @if ($riwayatPenjualan->hasPages())
+                            <div class="mt-4">
+                                {{ $riwayatPenjualan->links() }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div> <!-- END MAIN VIEW -->
@@ -270,20 +292,21 @@
             <div class="h-12 bg-[#5C8A8A]"></div>
             <div class="px-12 py-10">
                 <h2 class="text-3xl font-extrabold text-center text-black mb-10">Catat Penjualan Manual</h2>
-                <form class="space-y-0">
+                <form action="{{ route('pengelola.penjualan.store') }}" method="POST" class="space-y-0">
+                    @csrf
                     <div class="flex items-center border-t border-gray-200 py-6">
                         <label class="w-1/2 text-gray-700 font-medium">Tanggal Pengangkutan</label>
                         <div class="w-1/2 flex h-11">
                             <div class="bg-gray-200 border border-gray-300 border-r-0 rounded-l-md px-4 flex items-center justify-center">
                                 <i class="fa-regular fa-calendar text-gray-600 text-lg"></i>
                             </div>
-                            <input type="date" id="inputTanggal" class="w-full border border-gray-300 rounded-r-md px-3 text-gray-700 focus:outline-none focus:border-[#5C8A8A]">
+                            <input type="date" name="tanggal_pengangkutan" id="inputTanggal" required value="{{ date('Y-m-d') }}" class="w-full border border-gray-300 rounded-r-md px-3 text-gray-700 focus:outline-none focus:border-[#5C8A8A]">
                         </div>
                     </div>
                     <div class="flex items-center border-t border-gray-200 py-6">
                         <label class="w-1/2 text-gray-700 font-medium">Total Berat</label>
                         <div class="w-1/2 flex items-center gap-3">
-                            <input type="number" id="inputBerat" class="w-32 border border-gray-300 rounded-md px-3 py-2 h-11 focus:outline-none focus:border-[#5C8A8A]">
+                            <input type="number" step="0.01" name="total_berat" id="inputBerat" required class="w-32 border border-gray-300 rounded-md px-3 py-2 h-11 focus:outline-none focus:border-[#5C8A8A]">
                             <span class="text-gray-700 font-medium">Kg</span>
                         </div>
                     </div>
@@ -291,18 +314,18 @@
                         <label class="w-1/2 text-gray-700 font-medium">Total Nilai</label>
                         <div class="w-1/2 flex items-center gap-3">
                             <span class="text-gray-700 font-medium">Rp</span>
-                            <input type="text" id="inputNilai" class="w-full border border-gray-300 rounded-md px-3 py-2 h-11 focus:outline-none focus:border-[#5C8A8A]">
+                            <input type="number" name="total_nilai" id="inputNilai" required class="w-full border border-gray-300 rounded-md px-3 py-2 h-11 focus:outline-none focus:border-[#5C8A8A]">
                         </div>
                     </div>
+                    <div class="flex justify-center gap-6 mt-10">
+                        <button type="submit" class="bg-[#6DC355] hover:bg-green-600 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-colors text-lg">
+                            Simpan
+                        </button>
+                        <button type="button" onclick="closeModalCatat()" class="bg-[#7F7F7F] hover:bg-gray-600 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-colors text-lg">
+                            Batal
+                        </button>
+                    </div>
                 </form>
-                <div class="flex justify-center gap-6 mt-10">
-                    <button type="button" onclick="simpanPenjualanKeTabel()" class="bg-[#6DC355] hover:bg-green-600 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-colors text-lg">
-                        Simpan
-                    </button>
-                    <button type="button" onclick="closeModalCatat()" class="bg-[#7F7F7F] hover:bg-gray-600 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-colors text-lg">
-                        Batal
-                    </button>
-                </div>
             </div>
         </div>
     </div>

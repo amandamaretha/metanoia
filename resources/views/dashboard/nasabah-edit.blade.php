@@ -25,7 +25,7 @@
                     <div class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/20">
                         <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
                     </div>
-                    <h2 class="mt-4 text-lg font-bold">Ammirudin suep</h2>
+                    <h2 class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
                 </div>
 
                 <nav class="px-4 space-y-2">
@@ -41,13 +41,6 @@
                        class="flex items-center px-4 py-3 rounded-lg transition-colors {{ Request::routeIs('pengelola.nasabah*') ? 'bg-gray-100 text-sidebar-active font-bold' : 'hover:bg-white/10 font-semibold' }}">
                         <i class="fa-solid fa-users w-6"></i>
                         <span>Nasabah</span>
-                    </a>
-
-                    <!-- Menu Transaksi -->
-                    <a href="{{ route('pengelola.transaksi') }}"
-                       class="flex items-center px-4 py-3 rounded-lg transition-colors {{ Request::routeIs('pengelola.transaksi') ? 'bg-gray-100 text-sidebar-active font-bold' : 'hover:bg-white/10 font-semibold' }}">
-                        <i class="fa-solid fa-money-bill-transfer w-6"></i>
-                        <span>Transaksi</span>
                     </a>
 
                     <a href="{{ route('pengelola.penimbangan') }}" class="flex items-center px-4 py-3 hover:bg-white/10 rounded-lg transition-colors">
@@ -79,23 +72,36 @@
         <main class="flex-1 p-8 overflow-y-auto relative z-0">
             <h1 class="text-3xl font-extrabold text-black mb-6">Edit Data Nasabah</h1>
 
+            @if ($errors->any())
+                <div class="max-w-4xl mx-auto mb-6 p-4 rounded-lg bg-red-100 border border-red-300 text-red-700 text-sm font-semibold">
+                    <ul class="list-disc list-inside">
+                        @foreach ($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <!-- FORM CONTAINER -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-300 max-w-4xl mx-auto">
 
                 <!-- Header Card & Avatar -->
                 <div class="bg-gray-200 h-40 flex items-center justify-center rounded-t-lg relative">
                     <div class="w-32 h-32 bg-[#F6CA44] rounded-full border-4 border-gray-200 flex items-center justify-center overflow-hidden absolute -bottom-10 shadow-sm">
-                        <img src="https://i.pravatar.cc/150?img=47" alt="Profile Nasabah" class="w-full h-full object-cover">
+                        <img src="https://i.pravatar.cc/150?img={{ ($nasabah->id % 70) + 1 }}" alt="Profile Nasabah" class="w-full h-full object-cover">
                     </div>
                 </div>
                 <div class="h-14"></div>
 
-                <form action="#" method="POST">
+                <form id="formEditNasabah" action="{{ route('pengelola.nasabah.update', $nasabah->id) }}" method="POST">
+                    @csrf
+                    @method('PUT')
+
                     <!-- Row: Nama Nasabah (Tanpa Pensil) -->
                     <div class="flex items-center border-t border-gray-200 px-8 py-4">
                         <label class="w-1/3 text-gray-700 font-medium">Nama Nasabah</label>
                         <div class="w-2/3">
-                            <input type="text" value="Hafidh Tedi Setiawan" class="border border-gray-300 rounded-md px-3 py-2 w-full max-w-md focus:outline-none focus:border-[#5C8A8A]">
+                            <input type="text" name="nama" value="{{ old('nama', $nasabah->nama) }}" required class="border border-gray-300 rounded-md px-3 py-2 w-full max-w-md focus:outline-none focus:border-[#5C8A8A]">
                         </div>
                     </div>
 
@@ -104,7 +110,7 @@
                         <label class="w-1/3 text-gray-700 font-medium">Saldo</label>
                         <div class="w-2/3 flex items-center gap-3">
                             <span class="text-gray-700 font-medium">Rp</span>
-                            <input type="text" id="mainSaldoInput" value="300.000" readonly class="border border-gray-300 bg-gray-50 rounded-md px-3 py-2 w-full max-w-sm focus:outline-none cursor-not-allowed">
+                            <input type="text" id="mainSaldoInput" value="{{ number_format($nasabah->saldo ?? 0, 0, ',', '.') }}" readonly class="border border-gray-300 bg-gray-50 rounded-md px-3 py-2 w-full max-w-sm focus:outline-none cursor-not-allowed">
                             <i onclick="openEditModal('saldo', 'Saldo')" class="fa-solid fa-pen text-gray-500 cursor-pointer hover:text-blue-500 transition-colors p-2"></i>
                         </div>
                     </div>
@@ -113,7 +119,7 @@
                     <div class="flex items-center border-t border-gray-200 px-8 py-4">
                         <label class="w-1/3 text-gray-700 font-medium">NIK</label>
                         <div class="w-2/3">
-                            <input type="text" value="089648354570" class="border border-gray-300 rounded-md px-3 py-2 w-full max-w-md focus:outline-none focus:border-[#5C8A8A]">
+                            <input type="text" value="{{ $nasabah->nik }}" readonly class="border border-gray-300 bg-gray-50 text-gray-500 rounded-md px-3 py-2 w-full max-w-md focus:outline-none cursor-not-allowed">
                         </div>
                     </div>
 
@@ -121,7 +127,7 @@
                     <div class="flex items-center border-t border-gray-200 px-8 py-4">
                         <label class="w-1/3 text-gray-700 font-medium">No Telepon</label>
                         <div class="w-2/3 flex items-center gap-3">
-                            <input type="text" id="mainTeleponInput" value="089648354570" readonly class="border border-gray-300 bg-gray-50 rounded-md px-3 py-2 w-full max-w-md focus:outline-none cursor-not-allowed">
+                            <input type="text" name="no_telp" id="mainTeleponInput" value="{{ old('no_telp', $nasabah->no_telp) }}" required class="border border-gray-300 bg-white rounded-md px-3 py-2 w-full max-w-md focus:outline-none focus:border-[#5C8A8A]">
                             <i onclick="openEditModal('telepon', 'No Telepon')" class="fa-solid fa-pen text-gray-500 cursor-pointer hover:text-blue-500 transition-colors p-2"></i>
                         </div>
                     </div>
@@ -130,16 +136,18 @@
                     <div class="flex items-start border-t border-gray-200 px-8 py-4">
                         <label class="w-1/3 text-gray-700 font-medium pt-2">Alamat</label>
                         <div class="w-2/3">
-                            <textarea rows="3" class="border border-gray-300 rounded-md px-3 py-2 w-full max-w-md focus:outline-none focus:border-[#5C8A8A]">Perum Graha Pratama&#13;&#10;Permai Blok C3</textarea>
+                            <textarea name="alamat" rows="3" required class="border border-gray-300 rounded-md px-3 py-2 w-full max-w-md focus:outline-none focus:border-[#5C8A8A]">{{ old('alamat', $nasabah->alamat) }}</textarea>
                         </div>
                     </div>
+
+                    <!-- Status hidden: tetap aktif atau sesuai status nasabah -->
+                    <input type="hidden" name="status" value="{{ old('status', $nasabah->status ?? 'aktif') }}">
 
                     <!-- Row: Password (DENGAN PENSIL) -->
                     <div class="flex items-center border-t border-gray-200 px-8 py-4 rounded-b-lg">
                         <label class="w-1/3 text-gray-700 font-medium">Password</label>
                         <div class="w-2/3 flex items-center gap-3">
-                            <!-- Input tipe text atau password, sementara dibiarkan text sesuai desain -->
-                            <input type="text" id="mainPasswordInput" value="Hafidh2345!" readonly class="border border-gray-300 bg-gray-50 rounded-md px-3 py-2 w-full max-w-md focus:outline-none cursor-not-allowed">
+                            <input type="password" id="mainPasswordInput" value="********" readonly class="border border-gray-300 bg-gray-50 rounded-md px-3 py-2 w-full max-w-md focus:outline-none cursor-not-allowed">
                             <i onclick="openEditModal('password', 'Password')" class="fa-solid fa-pen text-gray-500 cursor-pointer hover:text-blue-500 transition-colors p-2"></i>
                         </div>
                     </div>
@@ -147,7 +155,7 @@
             </div>
 
             <div class="flex justify-center gap-4 mt-8 mb-12">
-                <button type="button" class="bg-[#6DC355] hover:bg-green-600 text-white font-bold py-3 px-12 rounded-lg shadow-sm transition-colors text-lg">
+                <button type="submit" form="formEditNasabah" class="bg-[#6DC355] hover:bg-green-600 text-white font-bold py-3 px-12 rounded-lg shadow-sm transition-colors text-lg">
                     Simpan
                 </button>
                 <a href="{{ route('pengelola.nasabah') }}" class="bg-[#7F7F7F] hover:bg-gray-600 text-white font-bold py-3 px-12 rounded-lg shadow-sm transition-colors text-lg">

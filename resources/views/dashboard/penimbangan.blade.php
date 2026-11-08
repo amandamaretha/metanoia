@@ -95,7 +95,7 @@
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                                     <i class="fa-solid fa-magnifying-glass text-sm"></i>
                                 </span>
-                                <input type="text" id="searchInput" onkeyup="filterNasabah()" placeholder="Cari nama nasabah"
+                                <input type="text" id="searchInput" onkeyup="filterNasabah()" onkeydown="if(event.key === 'Enter'){event.preventDefault(); return false;}" placeholder="Cari nama nasabah"
                                     class="w-full pl-9 pr-4 py-2.5 rounded-md border-2 border-gray-200 focus:outline-none focus:border-[#5C8A8A] text-sm text-gray-700 font-medium transition-colors">
                             </div>
                         </div>
@@ -547,8 +547,9 @@
             let input = document.getElementById("searchInput").value.toLowerCase();
             let items = document.querySelectorAll(".nasabah-item");
             items.forEach(item => {
-                let nama = item.querySelector(".nasabah-nama").innerText.toLowerCase();
-                item.style.display = (nama.indexOf(input) > -1) ? "flex" : "none";
+                let namaEl = item.querySelector(".nasabah-nama");
+                let nama = namaEl ? namaEl.innerText.toLowerCase() : "";
+                item.style.display = (nama.indexOf(input) > -1 || item.innerText.toLowerCase().indexOf(input) > -1) ? "flex" : "none";
             });
         }
 
