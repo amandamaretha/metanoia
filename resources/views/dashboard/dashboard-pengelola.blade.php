@@ -48,13 +48,6 @@
                         <span>Nasabah</span>
                     </a>
 
-                    <!-- Menu Transaksi -->
-                    <a href="{{ route('pengelola.transaksi') }}"
-                       class="flex items-center px-4 py-3 rounded-lg transition-colors {{ Request::routeIs('pengelola.transaksi') ? 'bg-gray-100 text-sidebar-active font-bold' : 'hover:bg-white/10 font-semibold' }}">
-                        <i class="fa-solid fa-money-bill-transfer w-6"></i>
-                        <span>Transaksi</span>
-                    </a>
-
                 <a href="{{ route('pengelola.penimbangan') }}"
                    class="flex items-center px-4 py-3 rounded-lg transition-colors {{ Request::routeIs('pengelola.penimbangan') ? 'bg-gray-100 text-sidebar-active font-bold' : 'hover:bg-white/10 font-semibold' }}">
                     <i class="fa-solid fa-scale-balanced w-6"></i>
@@ -107,7 +100,7 @@
                         <p class="text-sm mt-1">Setoran Pekan Ini</p>
                     </div>
                     <i class="fa-solid fa-wallet absolute right-4 top-4 text-7xl text-white/20"></i>
-                    <a href="{{ route('pengelola.transaksi') }}" class="bg-black/10 py-2 px-5 text-sm flex items-center justify-between hover:bg-black/20 transition">
+                    <a href="{{ route('pengelola.laporan') }}" class="bg-black/10 py-2 px-5 text-sm flex items-center justify-between hover:bg-black/20 transition">
                         Lihat Detail <i class="fa-solid fa-arrow-right"></i>
                     </a>
                 </div>

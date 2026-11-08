@@ -96,11 +96,11 @@
 
                     <div class="flex flex-col w-full">
                         <div class="border-t border-gray-300 w-full"></div>
-                        <a href="#" class="py-5 px-2 hover:bg-gray-50 transition block">
+                        <a href="{{ route('pengelola.petugas.tambah') }}" class="py-5 px-2 hover:bg-gray-50 transition block">
                             <span class="text-xl font-medium text-black">Tambah Akun Pengelola</span>
                         </a>
                         <div class="border-t border-gray-300 w-full"></div>
-                        <a href="#" class="py-5 px-2 hover:bg-gray-50 transition block">
+                        <a href="{{ route('pengelola.petugas.index') }}" class="py-5 px-2 hover:bg-gray-50 transition block">
                             <span class="text-xl font-medium text-black">Kelola Akun Petugas</span>
                         </a>
                         <div class="border-t border-gray-300 w-full"></div>

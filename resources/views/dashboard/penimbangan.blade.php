@@ -458,18 +458,7 @@
 
         function selesaiSetoran() {
             alert("Setoran berhasil dikonfirmasi dan saldo nasabah bertambah!");
-            // Kembali ke halaman awal (Cari Nasabah)
-            document.getElementById('viewProsesTimbang').classList.add('hidden');
-            document.getElementById('viewProsesTimbang').classList.remove('flex');
-            document.getElementById('viewCariNasabah').classList.remove('hidden');
-            document.getElementById('viewCariNasabah').classList.add('flex');
-
-            // Reset Data
-            document.getElementById("searchInput").value = "";
-            filterNasabah();
-            selectedSampahKode = null;
-            let semuaNasabah = document.querySelectorAll(".nasabah-item");
-            semuaNasabah.forEach(item => item.classList.remove("outline", "outline-4", "outline-[#3298E1]", "z-10"));
+            window.location.reload();
         }
 
         // Logika bawaan filter nasabah dsb...

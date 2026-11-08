@@ -115,9 +115,9 @@
                     <tbody class="divide-y divide-gray-300">
                         @php
                             $nasabahList = [
-                                ['no' => 1, 'nama' => 'Hafidh Tedi Setiawan', 'telp' => '089648354570', 'alamat' => 'Jl.Cikondang No.36 RT01...', 'saldo' => '3211097426832'],
-                                ['no' => 2, 'nama' => 'Ujang sueb', 'telp' => '089648354570', 'alamat' => 'Jl.Cikondang No.36 RT01...', 'saldo' => '3211097426832'],
-                                ['no' => 3, 'nama' => 'Asep Surahmat', 'telp' => '089648354570', 'alamat' => 'Jl.Cikondang No.36 RT01...', 'saldo' => '3211097426832'],
+                                ['no' => 1, 'id' => 1, 'nama' => 'Hafidh Tedi Setiawan', 'telp' => '089648354570', 'alamat' => 'Jl.Cikondang No.36 RT01...', 'saldo' => '3211097426832'],
+                                ['no' => 2, 'id' => 2, 'nama' => 'Ujang sueb', 'telp' => '089648354570', 'alamat' => 'Jl.Cikondang No.36 RT01...', 'saldo' => '3211097426832'],
+                                ['no' => 3, 'id' => 3, 'nama' => 'Asep Surahmat', 'telp' => '089648354570', 'alamat' => 'Jl.Cikondang No.36 RT01...', 'saldo' => '3211097426832'],
                             ];
                         @endphp
 
@@ -131,7 +131,7 @@
                             <td class="py-3 px-4 border border-gray-300 text-center">
                                 <div class="flex justify-center space-x-2">
                                     <!-- Tombol Edit diarahkan ke halaman Edit -->
-                                    <a href="{{ route('pengelola.nasabah.edit') }}" class="bg-[#5FA8DC] hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold inline-block">Edit</a>
+                                    <a href="{{ route('pengelola.nasabah.edit', $item['id']) }}" class="bg-[#5FA8DC] hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold inline-block">Edit</a>
                                     <!-- Tombol Hapus memicu fungsi openDeleteModal() di JavaScript -->
                                     <button onclick="openDeleteModal('{{ $item['nama'] }}')" class="bg-[#F86363] hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold">Hapus</button>
                                 </div>

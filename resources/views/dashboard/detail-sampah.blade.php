@@ -50,7 +50,7 @@
                     <a href="{{ route('pengelola.detail-sampah.tambah') }}" class="bg-[#5C8A8A] hover:bg-[#4a7070] text-white font-bold py-2.5 px-6 rounded-md shadow-md transition-colors text-[15px] flex items-center gap-2 border-[1.5px] border-white">
                         <i class="fa-solid fa-circle-plus"></i> Tambah Produk
                     </a>
-                    <a href="{{ route('pengelola.detail-sampah.ubah') }}" class="bg-[#FF0000] hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-md shadow-md transition-colors text-[15px] flex items-center gap-2 border-[1.5px] border-white">
+                    <a href="{{ route('pengelola.detail-sampah.ubah', $jenisSampah->first()?->id ?? 1) }}" class="bg-[#FF0000] hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-md shadow-md transition-colors text-[15px] flex items-center gap-2 border-[1.5px] border-white">
                         <i class="fa-solid fa-pen-to-square"></i> Ubah Produk
                     </a>
                 </div>
