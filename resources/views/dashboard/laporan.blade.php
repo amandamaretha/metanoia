@@ -27,7 +27,7 @@
                     <div class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/20">
                         <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
                     </div>
-                    <h2 class="mt-4 text-lg font-bold">Ammirudin suep</h2>
+                    <h2 class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
                 </div>
 
                 <nav class="px-4 space-y-2">
@@ -101,7 +101,7 @@
                     <div class="bg-[#EAF5E5] border border-[#d2e8cb] rounded-lg p-4 flex items-center justify-between shadow-sm">
                         <div class="flex flex-col">
                             <span class="text-gray-700 text-sm font-semibold mb-1">Jumlah Transaksi</span>
-                            <span class="text-3xl font-extrabold text-black">134</span>
+                            <span class="text-3xl font-extrabold text-black">{{ number_format($ringkasan['jumlah_transaksi'] ?? 0, 0, ',', '.') }}</span>
                             <span class="text-[10px] text-gray-500 mt-2"><span class="text-green-600 font-bold"><i class="fa-solid fa-chevron-up"></i> 12%</span><br>Dari Pekan Sebelumnya</span>
                         </div>
                         <i class="fa-regular fa-file-lines text-[#A5D6A7] text-5xl opacity-50 mr-2"></i>
@@ -111,7 +111,7 @@
                     <div class="bg-[#E0F7FA] border border-[#b2ebf2] rounded-lg p-4 flex items-center justify-between shadow-sm">
                         <div class="flex flex-col">
                             <span class="text-gray-700 text-sm font-semibold mb-1">Total Berat Sampah</span>
-                            <span class="text-2xl font-extrabold text-black">543,5 Kg</span>
+                            <span class="text-2xl font-extrabold text-black">{{ number_format($ringkasan['total_berat'] ?? 0, 1, ',', '.') }} Kg</span>
                             <span class="text-[10px] text-gray-500 mt-2"><span class="text-green-600 font-bold"><i class="fa-solid fa-chevron-up"></i> 8%</span><br>Dari Pekan Sebelumnya</span>
                         </div>
                     </div>
@@ -120,7 +120,7 @@
                     <div class="bg-[#FFF3E0] border border-[#ffe0b2] rounded-lg p-4 flex items-center justify-between shadow-sm">
                         <div class="flex flex-col">
                             <span class="text-gray-700 text-sm font-semibold mb-1">Nilai Setoran (100%)</span>
-                            <span class="text-xl font-extrabold text-black mt-1">Rp. 10.300.000</span>
+                            <span class="text-xl font-extrabold text-black mt-1">Rp. {{ number_format($ringkasan['nilai_setoran'] ?? 0, 0, ',', '.') }}</span>
                             <span class="text-[10px] text-gray-500 mt-2"><span class="text-green-600 font-bold"><i class="fa-solid fa-chevron-up"></i> 15%</span><br>Dari Pekan Sebelumnya</span>
                         </div>
                     </div>
@@ -129,7 +129,7 @@
                     <div class="bg-[#FFEBEE] border border-[#ffcdd2] rounded-lg p-4 flex items-center justify-between shadow-sm">
                         <div class="flex flex-col">
                             <span class="text-gray-700 text-sm font-semibold mb-1">Bagian Nasabah (90%)</span>
-                            <span class="text-xl font-extrabold text-black mt-1">Rp. 1.300.000</span>
+                            <span class="text-xl font-extrabold text-black mt-1">@if(is_numeric($ringkasan['bagian_nasabah'] ?? null)) Rp. {{ number_format($ringkasan['bagian_nasabah'], 0, ',', '.') }} @else {{ $ringkasan['bagian_nasabah'] ?? '-' }} @endif</span>
                             <span class="text-[10px] text-gray-500 mt-2"><span class="text-green-600 font-bold"><i class="fa-solid fa-chevron-up"></i> 15%</span><br>Dari Pekan Sebelumnya</span>
                         </div>
                         <i class="fa-regular fa-user text-[#ef9a9a] text-5xl opacity-50 mr-2"></i>
@@ -180,102 +180,35 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Baris 1 -->
+                            @forelse ($rincianJenis as $item)
+                            @php
+                                $item = (array) $item;
+                                $kategori = $item['kategori'] ?? '';
+                                $kategoriBg = match(strtolower($kategori)) {
+                                    'plastik' => 'bg-[#7C4DFF]',
+                                    'kertas' => 'bg-[#1DE9B6]',
+                                    'logam' => 'bg-[#FF8A65]',
+                                    'kaca' => 'bg-[#4DD0E1]',
+                                    default => 'bg-[#FFB74D]',
+                                };
+                                $nilai = $item['nilai_setoran'] ?? 0;
+                            @endphp
                             <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                <td class="py-2 px-2 text-center border-r border-gray-200">1</td>
-                                <td class="py-2 px-3 border-r border-gray-200">Botol Putih (P06)</td>
-                                <td class="py-2 px-3 text-center border-r border-gray-200"><span class="bg-[#7C4DFF] text-white py-1 px-2 rounded-md block">Plastik</span></td>
-                                <td class="py-2 px-2 text-center border-r border-gray-200">16</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">65,4</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">2.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">135.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">117.720</td>
-                                <td class="py-2 px-2 text-right">13.080</td>
+                                <td class="py-2 px-2 text-center border-r border-gray-200">{{ $loop->iteration }}</td>
+                                <td class="py-2 px-3 border-r border-gray-200">{{ $item['nama'] ?? '' }} ({{ $item['kode'] ?? '' }})</td>
+                                <td class="py-2 px-3 text-center border-r border-gray-200"><span class="{{ $kategoriBg }} text-white py-1 px-2 rounded-md block">{{ $kategori }}</span></td>
+                                <td class="py-2 px-2 text-center border-r border-gray-200">{{ $item['jumlah_transaksi'] ?? 0 }}</td>
+                                <td class="py-2 px-2 text-right border-r border-gray-200">{{ number_format($item['total_berat'] ?? 0, 1, ',', '.') }}</td>
+                                <td class="py-2 px-2 text-right border-r border-gray-200">{{ number_format($item['harga_per_kg'] ?? 0, 0, ',', '.') }}</td>
+                                <td class="py-2 px-2 text-right border-r border-gray-200">{{ number_format($nilai, 0, ',', '.') }}</td>
+                                <td class="py-2 px-2 text-right border-r border-gray-200">{{ number_format(round($nilai * 0.9), 0, ',', '.') }}</td>
+                                <td class="py-2 px-2 text-right">{{ number_format(round($nilai * 0.1), 0, ',', '.') }}</td>
                             </tr>
-                            <!-- Baris 2 -->
-                            <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                <td class="py-2 px-2 text-center border-r border-gray-200">2</td>
-                                <td class="py-2 px-3 border-r border-gray-200">Pet Berwarna (P14)</td>
-                                <td class="py-2 px-3 text-center border-r border-gray-200"><span class="bg-[#7C4DFF] text-white py-1 px-2 rounded-md block">Plastik</span></td>
-                                <td class="py-2 px-2 text-center border-r border-gray-200">16</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">65,4</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">2.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">135.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">117.720</td>
-                                <td class="py-2 px-2 text-right">13.080</td>
+                            @empty
+                            <tr>
+                                <td colspan="9" class="py-6 px-4 text-center text-gray-500 font-medium">Tidak ada data rincian setoran.</td>
                             </tr>
-                            <!-- Baris 3 -->
-                            <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                <td class="py-2 px-2 text-center border-r border-gray-200">3</td>
-                                <td class="py-2 px-3 border-r border-gray-200">Majalah/Duplek/Karton (K05)</td>
-                                <td class="py-2 px-3 text-center border-r border-gray-200"><span class="bg-[#1DE9B6] text-white py-1 px-2 rounded-md block">Kertas</span></td>
-                                <td class="py-2 px-2 text-center border-r border-gray-200">16</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">65,4</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">2.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">135.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">117.720</td>
-                                <td class="py-2 px-2 text-right">13.080</td>
-                            </tr>
-                            <!-- Baris 4 -->
-                            <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                <td class="py-2 px-2 text-center border-r border-gray-200">4</td>
-                                <td class="py-2 px-3 border-r border-gray-200">Besi (L01)</td>
-                                <td class="py-2 px-3 text-center border-r border-gray-200"><span class="bg-[#FF8A65] text-white py-1 px-2 rounded-md block">Logam</span></td>
-                                <td class="py-2 px-2 text-center border-r border-gray-200">16</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">65,4</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">2.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">135.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">117.720</td>
-                                <td class="py-2 px-2 text-right">13.080</td>
-                            </tr>
-                            <!-- Baris 5 -->
-                            <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                <td class="py-2 px-2 text-center border-r border-gray-200">5</td>
-                                <td class="py-2 px-3 border-r border-gray-200">Gelas Sablon/Ale Ale (P09)</td>
-                                <td class="py-2 px-3 text-center border-r border-gray-200"><span class="bg-[#7C4DFF] text-white py-1 px-2 rounded-md block">Plastik</span></td>
-                                <td class="py-2 px-2 text-center border-r border-gray-200">16</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">65,4</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">2.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">135.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">117.720</td>
-                                <td class="py-2 px-2 text-right">13.080</td>
-                            </tr>
-                            <!-- Baris 6 -->
-                            <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                <td class="py-2 px-2 text-center border-r border-gray-200">6</td>
-                                <td class="py-2 px-3 border-r border-gray-200">Accu (C01)</td>
-                                <td class="py-2 px-3 text-center border-r border-gray-200"><span class="bg-[#FFB74D] text-white py-1 px-2 rounded-md block">Lainnya</span></td>
-                                <td class="py-2 px-2 text-center border-r border-gray-200">16</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">65,4</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">2.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">135.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">117.720</td>
-                                <td class="py-2 px-2 text-right">13.080</td>
-                            </tr>
-                            <!-- Baris 7 -->
-                            <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                <td class="py-2 px-2 text-center border-r border-gray-200">7</td>
-                                <td class="py-2 px-3 border-r border-gray-200">Botol Kecap (B11)</td>
-                                <td class="py-2 px-3 text-center border-r border-gray-200"><span class="bg-[#4DD0E1] text-white py-1 px-2 rounded-md block">Kaca</span></td>
-                                <td class="py-2 px-2 text-center border-r border-gray-200">16</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">65,4</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">2.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">135.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">117.720</td>
-                                <td class="py-2 px-2 text-right">13.080</td>
-                            </tr>
-                            <!-- Baris 8 -->
-                            <tr class="hover:bg-gray-50">
-                                <td class="py-2 px-2 text-center border-r border-gray-200">8</td>
-                                <td class="py-2 px-3 border-r border-gray-200">Per Kasur/Kawat (502)</td>
-                                <td class="py-2 px-3 text-center border-r border-gray-200"><span class="bg-[#FF8A65] text-white py-1 px-2 rounded-md block">Logam</span></td>
-                                <td class="py-2 px-2 text-center border-r border-gray-200">16</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">65,4</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">2.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">135.000</td>
-                                <td class="py-2 px-2 text-right border-r border-gray-200">117.720</td>
-                                <td class="py-2 px-2 text-right">13.080</td>
-                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -298,10 +231,10 @@
         new Chart(ctxBar, {
             type: 'bar',
             data: {
-                labels: ['Plastik', 'Kertas', 'Logam', 'Kaca', 'Lainnya'],
+                labels: {!! json_encode($kategoriLabels ?? []) !!},
                 datasets: [{
                     label: 'Nilai Setoran',
-                    data: [20, 38, 78, 21, 80], // Data mockup sesuai gambar
+                    data: {!! json_encode($kategoriNilai ?? []) !!},
                     backgroundColor: '#8C9EFF', // Warna ungu muda
                     borderRadius: 4,
                     barThickness: 35
@@ -316,8 +249,7 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 100,
-                        ticks: { stepSize: 20, color: '#9CA3AF' },
+                        ticks: { color: '#9CA3AF' },
                         grid: { borderDash: [5, 5] } // Garis putus-putus
                     },
                     x: {
@@ -345,7 +277,7 @@
                     // Teks Baris 1
                     ctx.font = "bold " + fontSize + "em sans-serif";
                     ctx.fillStyle = "#000";
-                    ctx.fillText("543,5 Kg", width / 2, height / 2 - 10);
+                    ctx.fillText("{{ number_format($ringkasan['total_berat'] ?? 0, 1, ',', '.') }} Kg", width / 2, height / 2 - 10);
 
                     // Teks Baris 2
                     ctx.font = "normal " + (fontSize * 0.6) + "em sans-serif";
@@ -359,15 +291,15 @@
         new Chart(ctxDonut, {
             type: 'doughnut',
             data: {
-                labels: ['Plastik', 'Kertas', 'Logam', 'Kaca', 'Lainnya'],
+                labels: {!! json_encode($kategoriLabels ?? []) !!},
                 datasets: [{
-                    data: [38.45, 7.8, 17.92, 3.4, 32.43], // Persentase mockup
+                    data: {!! json_encode($kategoriPersenBerat ?? []) !!},
                     backgroundColor: [
                         '#7C4DFF', // Plastik (Ungu)
                         '#1DE9B6', // Kertas (Tosca)
-                        '#FFB74D', // Lainnya (Orange)
+                        '#FF8A65', // Logam (Merah/Orange)
                         '#FFCDD2', // Kaca (Pink Muda)
-                        '#FF8A65'  // Logam (Merah/Orange)
+                        '#FFB74D'  // Lainnya (Orange)
                     ],
                     borderWidth: 0,
                     hoverOffset: 4

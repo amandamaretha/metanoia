@@ -35,7 +35,7 @@
                     <div class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md">
                         <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
                     </div>
-                    <h2 class="mt-4 text-lg font-bold">Ammirudin suep</h2>
+                    <h2 class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
                 </div>
 
                 <nav class="px-4 space-y-2">
@@ -100,16 +100,23 @@
                             </div>
                         </div>
 
-                        <div class="flex flex-col border border-gray-300 rounded-md w-full max-w-full" id="daftarNasabah">
-                            <!-- Dummy Data Nasabah -->
-                            <div class="nasabah-item flex items-center justify-between p-4 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-all" onclick="pilihNasabah(this)">
+                        <div class="flex flex-col border border-gray-300 rounded-md w-full max-w-full divide-y divide-gray-200 max-h-[400px] overflow-y-auto" id="daftarNasabah">
+                            @forelse ($nasabahList as $nasabah)
+                            <div class="nasabah-item flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer transition-all"
+                                 data-id="{{ $nasabah->id }}"
+                                 onclick="pilihNasabah(this)">
                                 <div class="flex items-center gap-4 w-1/3">
-                                    <div class="w-10 h-10 rounded-full border-2 border-yellow-400 overflow-hidden"><img src="https://i.pravatar.cc/150?img=12" class="w-full h-full object-cover"></div>
-                                    <span class="font-bold text-black nasabah-nama text-[15px]">Ammirudin saepul jamil</span>
+                                    <div class="w-10 h-10 rounded-full border-2 border-yellow-400 overflow-hidden flex-shrink-0">
+                                        <img src="https://i.pravatar.cc/150?img={{ ($nasabah->id % 70) + 1 }}" class="w-full h-full object-cover" alt="Profile">
+                                    </div>
+                                    <span class="font-bold text-black nasabah-nama text-[15px] truncate">{{ $nasabah->nama }}</span>
                                 </div>
-                                <div class="w-1/3 text-center text-gray-500 font-medium text-sm">32183647280171</div>
-                                <div class="w-1/3 text-right text-gray-400 font-medium text-sm truncate">Perum Graha Prata...</div>
+                                <div class="w-1/3 text-center text-gray-500 font-medium text-sm">{{ $nasabah->masked_nik ?? $nasabah->nik }}</div>
+                                <div class="w-1/3 text-right text-gray-400 font-medium text-sm truncate">{{ $nasabah->alamat }}</div>
                             </div>
+                            @empty
+                            <div class="p-8 text-center text-gray-500 font-medium">Belum ada data nasabah.</div>
+                            @endforelse
                         </div>
                     </div>
                 </div>
@@ -129,18 +136,18 @@
                     <div class="bg-[#CBE6DF] border-[1.5px] border-[#103D34] rounded-xl p-5 flex flex-col md:flex-row items-center justify-between shadow-sm mb-6">
                         <div class="flex-1 w-full flex flex-col items-center justify-center md:border-r-[1.5px] border-[#103D34] py-2">
                             <span class="text-[#103D34] font-extrabold text-lg mb-0.5">Status Akun</span>
-                            <span class="text-[#59AC41] font-bold flex items-center gap-2 text-sm"><div class="w-2.5 h-2.5 bg-[#59AC41] rounded-full shadow-sm"></div> Aktif</span>
+                            <span id="statusNasabahTampil" class="text-[#59AC41] font-bold flex items-center gap-2 text-sm"><div class="w-2.5 h-2.5 bg-[#59AC41] rounded-full shadow-sm"></div> Aktif</span>
                         </div>
                         <div class="flex-[1.5] w-full px-6 flex flex-col justify-center py-2 text-center md:text-left md:border-r-[1.5px] border-[#103D34] mt-4 md:mt-0">
-                            <span id="detailNamaNasabah" class="text-[#103D34] font-extrabold text-lg leading-tight mb-0.5">Nama Nasabah</span>
-                            <span class="text-[#103D34] font-medium text-[15px] leading-tight">+62 878 2546 9878</span>
-                            <span class="text-[#103D34] font-medium text-[15px] leading-tight">Alamat Nasabah</span>
+                            <span id="namaNasabahTampil" class="text-[#103D34] font-extrabold text-lg leading-tight mb-0.5">-</span>
+                            <span id="telpNasabahTampil" class="text-[#103D34] font-medium text-[15px] leading-tight">-</span>
+                            <span id="alamatNasabahTampil" class="text-[#103D34] font-medium text-[15px] leading-tight">-</span>
                         </div>
                         <div class="flex-1 w-full flex items-center justify-center gap-4 py-2 mt-4 md:mt-0">
                             <i class="fa-solid fa-wallet text-[32px] text-[#103D34]"></i>
                             <div class="flex flex-col">
                                 <span class="text-[#103D34] font-extrabold text-lg leading-tight mb-0.5">Total Saldo</span>
-                                <span class="text-[#103D34] font-medium text-[15px] leading-tight">Rp. 540.000</span>
+                                <span id="saldoNasabahTampil" class="text-[#103D34] font-medium text-[15px] leading-tight">Rp 0</span>
                             </div>
                         </div>
                     </div>
@@ -156,7 +163,37 @@
 
                 <div class="px-10 py-8 flex-1 overflow-y-auto">
                     <div id="gridJenisSampahPenimbangan" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        <!-- Data otomatis dirender di sini melalui JS -->
+                        @forelse ($jenisSampahList as $sampah)
+                        @php
+                            $hargaAktif = $sampah->hargaSampah->firstWhere('kondisi', 'sudah_dipilah')?->harga_per_kg
+                                ?? $sampah->hargaSampah->first()?->harga_per_kg
+                                ?? 0;
+                        @endphp
+                        <div id="sampah-card-{{ $sampah->id }}"
+                             onclick="pilihJenisSampah('{{ $sampah->id }}', '{{ $sampah->kode }}', '{{ addslashes($sampah->nama) }}', {{ $hargaAktif }})"
+                             class="bg-[#CBE6E0] border-[1.5px] border-[#103D34] rounded-xl p-2.5 flex items-stretch gap-3 hover:shadow-md cursor-pointer transition-shadow h-28 sampah-card"
+                             data-id="{{ $sampah->id }}"
+                             data-kode="{{ $sampah->kode }}"
+                             data-nama="{{ $sampah->nama }}"
+                             data-harga="{{ $hargaAktif }}">
+                            <div class="w-[90px] h-full bg-white rounded-lg border border-gray-300 flex items-center justify-center text-gray-400 text-[10px] overflow-hidden flex-shrink-0">
+                                @if ($sampah->gambar)
+                                    <img src="{{ asset('storage/' . $sampah->gambar) }}" alt="{{ $sampah->nama }}" class="w-full h-full object-cover">
+                                @else
+                                    <div class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-[10px]">Gambar</div>
+                                @endif
+                            </div>
+                            <div class="flex flex-col flex-1 justify-center items-center px-1 text-center">
+                                <span class="font-extrabold text-[#103D34] text-xl leading-tight">{{ $sampah->kode }}</span>
+                                <span class="font-bold text-[#103D34] text-[12px] leading-tight mb-1 mt-0.5">{{ $sampah->nama }}</span>
+                                <span class="text-[#103D34] text-[9.5px] leading-tight line-clamp-3">{{ $sampah->deskripsi }}</span>
+                            </div>
+                        </div>
+                        @empty
+                        <div class="col-span-full py-12 text-center text-gray-500 font-medium">
+                            Belum ada jenis sampah tersedia.
+                        </div>
+                        @endforelse
                     </div>
                 </div>
 
@@ -178,18 +215,18 @@
                     <div class="bg-[#CBE6DF] border-[1.5px] border-[#103D34] rounded-xl p-5 flex flex-col md:flex-row items-center justify-between shadow-sm mb-5">
                         <div class="flex-1 w-full flex flex-col items-center justify-center md:border-r-[1.5px] border-[#103D34] py-1">
                             <span class="text-[#103D34] font-extrabold text-lg mb-0.5">Status Akun</span>
-                            <span class="text-[#59AC41] font-bold flex items-center gap-2 text-sm"><div class="w-2.5 h-2.5 bg-[#59AC41] rounded-full shadow-sm animate-blink"></div> Aktif</span>
+                            <span id="timbangStatusNasabah" class="text-[#59AC41] font-bold flex items-center gap-2 text-sm"><div class="w-2.5 h-2.5 bg-[#59AC41] rounded-full shadow-sm animate-blink"></div> Aktif</span>
                         </div>
                         <div class="flex-[1.5] w-full px-6 flex flex-col justify-center py-1 text-center md:text-left md:border-r-[1.5px] border-[#103D34] mt-4 md:mt-0">
-                            <span id="timbangNamaNasabah" class="text-[#103D34] font-extrabold text-lg leading-tight mb-0.5">Nama Nasabah</span>
-                            <span class="text-[#103D34] font-medium text-[15px] leading-tight">+62 878 2546 9878</span>
-                            <span class="text-[#103D34] font-medium text-[15px] leading-tight">Alamat Nasabah</span>
+                            <span id="timbangNamaNasabah" class="text-[#103D34] font-extrabold text-lg leading-tight mb-0.5">-</span>
+                            <span id="timbangTelpNasabah" class="text-[#103D34] font-medium text-[15px] leading-tight">-</span>
+                            <span id="timbangAlamatNasabah" class="text-[#103D34] font-medium text-[15px] leading-tight">-</span>
                         </div>
                         <div class="flex-1 w-full flex items-center justify-center gap-4 py-1 mt-4 md:mt-0">
                             <i class="fa-solid fa-wallet text-[32px] text-[#103D34]"></i>
                             <div class="flex flex-col">
                                 <span class="text-[#103D34] font-extrabold text-lg leading-tight mb-0.5">Total Saldo</span>
-                                <span class="text-[#103D34] font-medium text-[15px] leading-tight">Rp. 540.000</span>
+                                <span id="timbangSaldoNasabah" class="text-[#103D34] font-medium text-[15px] leading-tight">Rp 0</span>
                             </div>
                         </div>
                     </div>
@@ -198,11 +235,11 @@
                     <div class="flex items-center gap-6 mt-2 pb-2">
                         <div class="flex items-center gap-3">
                             <label class="font-extrabold text-[#103D34] text-lg">Kode Produk:</label>
-                            <div id="timbangKodeProduk" class="bg-white px-4 py-1.5 rounded shadow-sm border border-gray-200 text-gray-700 font-bold min-w-[80px] text-center">POS</div>
+                            <div id="timbangKodeProduk" class="bg-white px-4 py-1.5 rounded shadow-sm border border-gray-200 text-gray-700 font-bold min-w-[80px] text-center">-</div>
                         </div>
                         <div class="flex items-center gap-3 flex-1">
                             <label class="font-extrabold text-[#103D34] text-lg">Nama Produk:</label>
-                            <div id="timbangNamaProduk" class="bg-white px-4 py-1.5 rounded shadow-sm border border-gray-200 text-gray-700 font-medium w-full max-w-md">Gelas / Cup Bening Bersih</div>
+                            <div id="timbangNamaProduk" class="bg-white px-4 py-1.5 rounded shadow-sm border border-gray-200 text-gray-700 font-medium w-full max-w-md">-</div>
                         </div>
                     </div>
                 </div>
@@ -317,13 +354,15 @@
 
     <!-- JAVASCRIPT LOGIKA -->
     <script>
+        let currentNasabah = null;
+        let selectedSampahId = null;
         let selectedSampahKode = null;
         let selectedSampahNama = null;
         let selectedSampahHarga = 0;
         let intervalTimbangan; // Untuk menyimpan ID animasi IoT
 
         function formatRupiah(angka) {
-            let numberString = angka.toString().replace(/[^,\d]/g, '');
+            let numberString = (angka || 0).toString().replace(/[^,\d]/g, '');
             let split = numberString.split(',');
             let sisa = split[0].length % 3;
             let rupiah = split[0].substr(0, sisa);
@@ -336,50 +375,94 @@
         }
 
         // ==========================================
-        // LOGIKA VIEW 2 (Pilih Sampah)
+        // LOGIKA VIEW 1 & AJAX CHECK NASABAH
         // ==========================================
-        function muatDataGridSampah() {
-            let container = document.getElementById("gridJenisSampahPenimbangan");
-            let dataProduk = JSON.parse(localStorage.getItem('db_jenis_sampah')) || [];
+        function pilihNasabah(elemenYangDiklik) {
+            let semuaNasabah = document.querySelectorAll(".nasabah-item");
+            semuaNasabah.forEach(item => item.classList.remove("outline", "outline-4", "outline-[#3298E1]", "z-10"));
+            elemenYangDiklik.classList.add("outline", "outline-4", "outline-[#3298E1]", "z-10");
 
-            if (dataProduk.length === 0) {
-                dataProduk = [
-                    { kode: 'POS', nama: 'Gelas / Cup Bening Bersih', deskripsi: 'Gelas Plastik', harga: '3800' },
-                    { kode: 'P0B', nama: 'Ember Hitam', deskripsi: 'Jenis botol/wadah PP', harga: '2400' }
-                ];
-                localStorage.setItem('db_jenis_sampah', JSON.stringify(dataProduk));
+            let id = elemenYangDiklik.getAttribute('data-id');
+            let fallbackNama = elemenYangDiklik.querySelector(".nasabah-nama") ? elemenYangDiklik.querySelector(".nasabah-nama").innerText.trim() : '';
+
+            if (id) {
+                // Panggil AJAX endpoint check-nasabah
+                fetch('{{ url("/pengelola/penimbangan/nasabah") }}/' + id, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => { throw new Error(data.message || 'Akun nasabah tidak aktif.'); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.nasabah) {
+                        currentNasabah = data.nasabah;
+                        let nama = data.nasabah.nama;
+                        let telp = data.nasabah.no_telp || '-';
+                        let alamat = data.nasabah.alamat || '-';
+                        let saldoFormatted = 'Rp. ' + formatRupiah(data.nasabah.saldo ?? 0);
+
+                        // Update Info Nasabah di View 2
+                        if (document.getElementById('namaNasabahTampil')) document.getElementById('namaNasabahTampil').innerText = nama;
+                        if (document.getElementById('detailNamaNasabah')) document.getElementById('detailNamaNasabah').innerText = nama;
+                        if (document.getElementById('telpNasabahTampil')) document.getElementById('telpNasabahTampil').innerText = telp;
+                        if (document.getElementById('alamatNasabahTampil')) document.getElementById('alamatNasabahTampil').innerText = alamat;
+                        if (document.getElementById('saldoNasabahTampil')) document.getElementById('saldoNasabahTampil').innerText = saldoFormatted;
+
+                        // Update Info Nasabah di View 3
+                        if (document.getElementById('timbangNamaNasabah')) document.getElementById('timbangNamaNasabah').innerText = nama;
+                        if (document.getElementById('timbangTelpNasabah')) document.getElementById('timbangTelpNasabah').innerText = telp;
+                        if (document.getElementById('timbangAlamatNasabah')) document.getElementById('timbangAlamatNasabah').innerText = alamat;
+                        if (document.getElementById('timbangSaldoNasabah')) document.getElementById('timbangSaldoNasabah').innerText = saldoFormatted;
+
+                        setTimeout(() => {
+                            document.getElementById('viewCariNasabah').classList.add('hidden');
+                            document.getElementById('viewCariNasabah').classList.remove('flex');
+                            document.getElementById('viewPilihJenis').classList.remove('hidden');
+                            document.getElementById('viewPilihJenis').classList.add('flex');
+                        }, 250);
+                    }
+                })
+                .catch(err => {
+                    alert(err.message || 'Akun nasabah tidak aktif atau terjadi kesalahan.');
+                });
+            } else {
+                if (document.getElementById('namaNasabahTampil')) document.getElementById('namaNasabahTampil').innerText = fallbackNama;
+                if (document.getElementById('detailNamaNasabah')) document.getElementById('detailNamaNasabah').innerText = fallbackNama;
+                setTimeout(() => {
+                    document.getElementById('viewCariNasabah').classList.add('hidden');
+                    document.getElementById('viewCariNasabah').classList.remove('flex');
+                    document.getElementById('viewPilihJenis').classList.remove('hidden');
+                    document.getElementById('viewPilihJenis').classList.add('flex');
+                }, 250);
             }
-
-            let htmlContent = "";
-            dataProduk.forEach(item => {
-                let hargaFormatted = formatRupiah(item.harga || '3000');
-                if (selectedSampahKode === item.kode) {
-                    htmlContent += `
-                        <div onclick="pilihJenisSampah('${item.kode}', '${item.nama}', ${item.harga || 3000})" class="bg-[#AEE68C] border-[1.5px] border-[#103D34] rounded-xl p-2.5 flex flex-col items-center justify-center text-center cursor-pointer shadow-md transition-all h-28">
-                            <span class="font-extrabold text-[#103D34] text-xl leading-tight mb-1">${item.kode}</span>
-                            <span class="font-medium text-[#297441] text-[13px] leading-tight mb-2">${item.nama}</span>
-                            <span class="font-extrabold text-[#103D34] text-[19px] leading-tight tracking-wide">Rp. ${hargaFormatted}/Kg</span>
-                        </div>`;
-                } else {
-                    htmlContent += `
-                        <div onclick="pilihJenisSampah('${item.kode}', '${item.nama}', ${item.harga || 3000})" class="bg-[#CBE6E0] border-[1.5px] border-[#103D34] rounded-xl p-2.5 flex items-stretch gap-3 hover:shadow-md cursor-pointer transition-shadow h-28">
-                            <div class="w-[90px] h-full bg-white rounded-lg border border-gray-300 flex items-center justify-center text-gray-400 text-[10px]">Gambar</div>
-                            <div class="flex flex-col flex-1 justify-center items-center px-1 text-center">
-                                <span class="font-extrabold text-[#103D34] text-xl leading-tight">${item.kode}</span>
-                                <span class="font-bold text-[#103D34] text-[12px] leading-tight mb-1 mt-0.5">${item.nama}</span>
-                                <span class="text-[#103D34] text-[9.5px] leading-tight line-clamp-3">${item.deskripsi}</span>
-                            </div>
-                        </div>`;
-                }
-            });
-            container.innerHTML = htmlContent;
         }
 
-        function pilihJenisSampah(kode, nama, harga) {
+        // ==========================================
+        // LOGIKA VIEW 2 (Pilih Sampah)
+        // ==========================================
+        function pilihJenisSampah(id, kode, nama, harga) {
+            selectedSampahId = id;
             selectedSampahKode = kode;
             selectedSampahNama = nama;
-            selectedSampahHarga = parseInt(harga);
-            muatDataGridSampah();
+            selectedSampahHarga = parseInt(harga) || 0;
+
+            // Update highlight pada kartu jenis sampah terpilih
+            document.querySelectorAll('.sampah-card').forEach(card => {
+                card.classList.remove('bg-[#AEE68C]', 'shadow-md');
+                card.classList.add('bg-[#CBE6E0]');
+            });
+
+            let activeCard = document.getElementById('sampah-card-' + id);
+            if (activeCard) {
+                activeCard.classList.remove('bg-[#CBE6E0]');
+                activeCard.classList.add('bg-[#AEE68C]', 'shadow-md');
+            }
         }
 
         // ==========================================
@@ -407,9 +490,8 @@
             document.getElementById('viewProsesTimbang').classList.add('flex');
 
             // Set Data di Header View 3
-            document.getElementById('timbangNamaNasabah').innerText = document.getElementById('detailNamaNasabah').innerText;
-            document.getElementById('timbangKodeProduk').innerText = selectedSampahKode;
-            document.getElementById('timbangNamaProduk').innerText = selectedSampahNama;
+            if (document.getElementById('timbangKodeProduk')) document.getElementById('timbangKodeProduk').innerText = selectedSampahKode || '-';
+            if (document.getElementById('timbangNamaProduk')) document.getElementById('timbangNamaProduk').innerText = selectedSampahNama || '-';
 
             // Set Data Harga Awal di Kartu Kalkulator
             document.getElementById('calcHarga').innerText = "Rp. " + formatRupiah(selectedSampahHarga);
@@ -461,7 +543,6 @@
             window.location.reload();
         }
 
-        // Logika bawaan filter nasabah dsb...
         function filterNasabah() {
             let input = document.getElementById("searchInput").value.toLowerCase();
             let items = document.querySelectorAll(".nasabah-item");
@@ -470,21 +551,7 @@
                 item.style.display = (nama.indexOf(input) > -1) ? "flex" : "none";
             });
         }
-        function pilihNasabah(elemenYangDiklik) {
-            let semuaNasabah = document.querySelectorAll(".nasabah-item");
-            semuaNasabah.forEach(item => item.classList.remove("outline", "outline-4", "outline-[#3298E1]", "z-10"));
-            elemenYangDiklik.classList.add("outline", "outline-4", "outline-[#3298E1]", "z-10");
-            let namaNasabah = elemenYangDiklik.querySelector(".nasabah-nama").innerText;
-            setTimeout(() => {
-                document.getElementById('detailNamaNasabah').innerText = namaNasabah;
-                selectedSampahKode = null;
-                muatDataGridSampah();
-                document.getElementById('viewCariNasabah').classList.add('hidden');
-                document.getElementById('viewCariNasabah').classList.remove('flex');
-                document.getElementById('viewPilihJenis').classList.remove('hidden');
-                document.getElementById('viewPilihJenis').classList.add('flex');
-            }, 300);
-        }
+
         function kembaliKePencarian() {
             let semuaNasabah = document.querySelectorAll(".nasabah-item");
             semuaNasabah.forEach(item => item.classList.remove("outline", "outline-4", "outline-[#3298E1]", "z-10"));
@@ -495,14 +562,13 @@
             document.getElementById('viewCariNasabah').classList.remove('hidden');
             document.getElementById('viewCariNasabah').classList.add('flex');
         }
+
         function simulasiScanQR() {
             alert("Membuka Kamera: Mensimulasikan pemindaian QR Code...");
             setTimeout(() => {
-                document.getElementById("searchInput").value = "Ammirudin saepul jamil";
-                filterNasabah();
                 let semuaNasabah = document.querySelectorAll(".nasabah-item");
-                for(let i=0; i<semuaNasabah.length; i++) {
-                    if(semuaNasabah[i].style.display !== "none") {
+                for (let i = 0; i < semuaNasabah.length; i++) {
+                    if (semuaNasabah[i].style.display !== "none") {
                         pilihNasabah(semuaNasabah[i]);
                         break;
                     }
