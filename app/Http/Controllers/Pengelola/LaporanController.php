@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Pengelola;
 use App\Http\Controllers\Controller;
 use App\Models\Penjualan;
 use App\Models\Setoran;
+use App\Models\TransaksiKeuangan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -240,11 +241,23 @@ class LaporanController extends Controller
             'total_nilai.min' => 'Total nilai tidak boleh bernilai negatif.',
         ]);
 
-        $penjualan = Penjualan::create([
-            'tanggal_pengangkutan' => $validated['tanggal_pengangkutan'],
-            'total_berat' => $validated['total_berat'],
-            'total_nilai' => $validated['total_nilai'],
-        ]);
+        $penjualan = DB::transaction(function () use ($validated) {
+            $penjualan = Penjualan::create([
+                'tanggal_pengangkutan' => $validated['tanggal_pengangkutan'],
+                'total_berat' => $validated['total_berat'],
+                'total_nilai' => $validated['total_nilai'],
+            ]);
+
+            TransaksiKeuangan::create([
+                'petugas_id' => Auth::guard('petugas')->id(),
+                'tanggal' => $validated['tanggal_pengangkutan'],
+                'jenis' => 'pemasukan',
+                'nominal' => $validated['total_nilai'],
+                'keterangan' => 'Pemasukan dari penjualan sampah nomor ' . $penjualan->nomor,
+            ]);
+
+            return $penjualan;
+        });
 
         return redirect()->route('pengelola.laporan.penjualan')
             ->with('success', "Penjualan berhasil dicatat dengan nomor {$penjualan->nomor}.");

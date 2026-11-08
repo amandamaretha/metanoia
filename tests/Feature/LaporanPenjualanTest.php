@@ -9,6 +9,7 @@ use App\Models\Nasabah;
 use App\Models\Penjualan;
 use App\Models\Petugas;
 use App\Models\Setoran;
+use App\Models\TransaksiKeuangan;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
@@ -362,6 +363,30 @@ class LaporanPenjualanTest extends TestCase
         $penjualan2 = Penjualan::latest('id')->first();
         $this->assertSame('T'.str_pad((string) $penjualan2->id, 5, '0', STR_PAD_LEFT), $penjualan2->nomor);
         $this->assertNotEquals($penjualan->nomor, $penjualan2->nomor);
+    }
+
+    /**
+     * Catat Penjualan: Otomatis mencatat transaksi keuangan pemasukan di DB::transaction.
+     */
+    public function test_catat_penjualan_mencatat_transaksi_keuangan_pemasukan_otomatis(): void
+    {
+        $this->actingAs($this->petugasPengelola, 'petugas')
+            ->post(route('pengelola.penjualan.store'), [
+                'tanggal_pengangkutan' => '2026-11-08',
+                'total_berat' => 80.0,
+                'total_nilai' => 250000,
+            ]);
+
+        $penjualan = Penjualan::first();
+        $this->assertNotNull($penjualan);
+
+        $transaksi = TransaksiKeuangan::first();
+        $this->assertNotNull($transaksi);
+        $this->assertSame($this->petugasPengelola->id, $transaksi->petugas_id);
+        $this->assertSame('pemasukan', $transaksi->jenis);
+        $this->assertSame(250000, $transaksi->nominal);
+        $this->assertSame('2026-11-08', $transaksi->tanggal->toDateString());
+        $this->assertSame("Pemasukan dari penjualan sampah nomor {$penjualan->nomor}", $transaksi->keterangan);
     }
 
     /**
