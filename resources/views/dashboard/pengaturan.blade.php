@@ -28,7 +28,7 @@
                     <div class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/20">
                         <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
                     </div>
-                    <h2 id="displayNamaSidebar" class="mt-4 text-lg font-bold">Ammirudin suep</h2>
+                    <h2 id="displayNamaSidebar" class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
                 </div>
 
                 <nav class="px-4 space-y-2">
@@ -83,8 +83,8 @@
                         </div>
 
                         <div class="flex flex-col justify-center">
-                            <h2 id="displayNamaUtama" class="text-3xl font-extrabold text-white mb-1">Ammirudin suep</h2>
-                            <p class="text-gray-200 text-lg mb-4">Pengelola</p>
+                            <h2 id="displayNamaUtama" class="text-3xl font-extrabold text-white mb-1">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
+                            <p class="text-gray-200 text-lg mb-4">{{ ucfirst(Auth::guard('petugas')->user()->jabatan ?? 'pengelola') }}</p>
 
                             <div>
                                 <button type="button" onclick="bukaProfil()" class="bg-[#6DC355] hover:bg-green-600 border border-[#5ea949] text-white text-sm font-bold py-1.5 px-4 rounded shadow-sm transition-colors flex items-center gap-2">
@@ -129,11 +129,11 @@
 
                         <div class="text-center text-white w-full px-4">
                             <h2 class="text-[28px] font-extrabold flex items-center justify-center gap-3 mb-1">
-                                <span id="displayNamaKiri">Ammirudin suep</span>
+                                <span id="displayNamaKiri">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</span>
                                 <i class="fa-solid fa-pen-to-square text-xl cursor-pointer hover:text-gray-200 transition"></i>
                             </h2>
-                            <p class="text-xl font-light opacity-90 mb-0.5">Pengelola</p>
-                            <p id="displayNoHpKiri" class="text-lg font-light opacity-90">082314754841</p>
+                            <p class="text-xl font-light opacity-90 mb-0.5">{{ ucfirst(Auth::guard('petugas')->user()->jabatan ?? 'pengelola') }}</p>
+                            <p id="displayNoHpKiri" class="text-lg font-light opacity-90">{{ Auth::guard('petugas')->user()->no_telp ?? '' }}</p>
                         </div>
                     </div>
 
@@ -146,17 +146,24 @@
                             </button>
                         </div>
 
+                        @php
+                            $namaParts = explode(' ', Auth::guard('petugas')->user()->nama ?? '', 2);
+                            $namaDepan = $namaParts[0] ?? '';
+                            $namaBelakang = $namaParts[1] ?? '';
+                            $noHpUser = Auth::guard('petugas')->user()->no_telp ?? '';
+                        @endphp
+
                         <div class="flex-1 flex flex-col justify-center space-y-8 mt-10">
 
                             <div class="flex flex-col md:flex-row gap-6 w-full">
                                 <div class="w-full md:w-1/2">
                                     <label class="block text-gray-400 font-bold mb-2 text-[13px]">Nama Depan</label>
-                                    <input type="text" id="inputNamaDepan" value="Ammirudin"
+                                    <input type="text" id="inputNamaDepan" value="{{ $namaDepan }}"
                                         class="w-full border-2 border-gray-200 rounded-md px-4 py-3 text-gray-400 font-semibold focus:outline-none focus:border-[#5C8A8A] shadow-sm">
                                 </div>
                                 <div class="w-full md:w-1/2">
                                     <label class="block text-gray-400 font-bold mb-2 text-[13px]">Nama Belakang</label>
-                                    <input type="text" id="inputNamaBelakang" value="suep"
+                                    <input type="text" id="inputNamaBelakang" value="{{ $namaBelakang }}"
                                         class="w-full border-2 border-gray-200 rounded-md px-4 py-3 text-gray-400 font-semibold focus:outline-none focus:border-[#5C8A8A] shadow-sm">
                                 </div>
                             </div>
@@ -165,7 +172,7 @@
                                 <label class="block text-gray-400 font-bold mb-2 text-[13px]">No Telepon</label>
                                 <div class="flex items-center gap-6">
                                     <!-- Field No HP dibuat readonly agar pengubahan hanya melalui Modal -->
-                                    <input type="text" id="inputNoHp" value="082314754841" readonly
+                                    <input type="text" id="inputNoHp" value="{{ $noHpUser }}" readonly
                                         class="w-full md:w-[65%] border-2 border-gray-200 rounded-md px-4 py-3 text-gray-400 font-semibold focus:outline-none bg-white shadow-sm cursor-not-allowed">
 
                                     <!-- Tombol trigger modal -->

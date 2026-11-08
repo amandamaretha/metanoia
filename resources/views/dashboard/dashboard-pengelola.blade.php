@@ -29,7 +29,7 @@
                     <!-- Ganti dengan image profile asli -->
                     <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
                 </div>
-                <h2 class="mt-4 text-lg font-bold">Ammirudin suep</h2>
+                <h2 class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
             </div>
 
             <!-- Navigation -->
@@ -96,7 +96,7 @@
                 <!-- Card 2 -->
                 <div class="bg-[#00A86B] rounded-xl text-white relative overflow-hidden flex flex-col justify-between shadow-md">
                     <div class="p-5 relative z-10">
-                        <h3 class="text-4xl font-bold">25</h3>
+                        <h3 class="text-4xl font-bold">{{ $totalSetoran ?? 0 }}</h3>
                         <p class="text-sm mt-1">Setoran Pekan Ini</p>
                     </div>
                     <i class="fa-solid fa-wallet absolute right-4 top-4 text-7xl text-white/20"></i>

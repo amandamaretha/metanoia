@@ -27,7 +27,7 @@
                     <div class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/20">
                         <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
                     </div>
-                    <h2 class="mt-4 text-lg font-bold">Ammirudin suep</h2>
+                    <h2 class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
                 </div>
                 <nav class="px-4 space-y-2">
                     <a href="{{ route('pengelola.dashboard') }}" class="flex items-center px-4 py-3 hover:bg-white/10 rounded-lg font-semibold transition-colors"><i class="fa-solid fa-house w-6"></i><span>Dashboard</span></a>
@@ -56,54 +56,41 @@
                 </div>
             </div>
 
-            <!-- AREA GRID (Dikosongkan untuk diisi oleh JS) -->
+            @if(session('success'))
+                <div class="px-10 pt-4">
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                        <span class="block sm:inline">{{ session('success') }}</span>
+                    </div>
+                </div>
+            @endif
+
+            <!-- AREA GRID -->
             <div class="px-10 py-8 flex-1 overflow-y-auto">
                 <div id="gridProdukContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    <!-- Data akan dirender otomatis oleh JavaScript -->
+                    @forelse ($jenisSampah as $sampah)
+                        <div class="bg-[#CBE6E0] border-[1.5px] border-[#103D34] rounded-xl p-2.5 flex items-stretch gap-3 hover:shadow-md cursor-pointer transition-shadow h-28">
+                            <div class="w-[90px] h-full bg-white rounded-lg flex-shrink-0 overflow-hidden border border-gray-300 flex items-center justify-center">
+                                @if ($sampah->gambar)
+                                    <img src="{{ asset('storage/' . $sampah->gambar) }}" alt="{{ $sampah->nama }}" class="w-full h-full object-cover">
+                                @else
+                                    <div class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-[10px]">Gambar</div>
+                                @endif
+                            </div>
+                            <div class="flex flex-col flex-1 justify-center items-center px-1 text-center">
+                                <span class="font-extrabold text-[#103D34] text-xl leading-tight">{{ $sampah->kode }}</span>
+                                <span class="font-bold text-[#103D34] text-[12px] leading-tight mb-1">{{ $sampah->nama }}</span>
+                                <span class="text-[#103D34] text-[9px] leading-tight overflow-hidden text-ellipsis line-clamp-3">{{ $sampah->deskripsi }}</span>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-span-full py-12 text-center text-gray-500 font-medium">
+                            Belum ada data jenis sampah.
+                        </div>
+                    @endforelse
                 </div>
             </div>
 
         </main>
     </div>
-
-    <!-- JAVASCRIPT LOGIKA MENGAMBIL DATA PRODUK -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let container = document.getElementById("gridProdukContainer");
-
-            // Mengambil data dari localStorage (Database sementara browser)
-            let dataProduk = JSON.parse(localStorage.getItem('db_jenis_sampah'));
-
-            // Jika belum ada data sama sekali, berikan dummy data agar tampilan awal tidak kosong
-            if (!dataProduk || dataProduk.length === 0) {
-                dataProduk = [
-                    { kode: 'POS', nama: 'Gelas / Cup Bening Bersih', deskripsi: 'Gelas Plastik kemasan warna bening yang sudah dipotong bibir gelasnya' },
-                    { kode: 'P06', nama: 'Botol Putih', deskripsi: 'Botol plastik bahan PET berwarna putih pekat, bebas dari tutup botol & label' },
-                    { kode: 'P07', nama: 'Ember warna campur', deskripsi: 'Wadah/kemasan plastik berbahan PP contoh jerigen, HDPE, LDPE, & ember, botol oli, botol sampo' }
-                ];
-                // Simpan dummy ini ke local storage
-                localStorage.setItem('db_jenis_sampah', JSON.stringify(dataProduk));
-            }
-
-            // Render HTML berdasarkan data yang ada
-            let htmlContent = "";
-            dataProduk.forEach(item => {
-                htmlContent += `
-                    <div class="bg-[#CBE6E0] border-[1.5px] border-[#103D34] rounded-xl p-2.5 flex items-stretch gap-3 hover:shadow-md cursor-pointer transition-shadow h-28">
-                        <div class="w-[90px] h-full bg-white rounded-lg flex-shrink-0 overflow-hidden border border-gray-300 flex items-center justify-center">
-                            <div class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-[10px]">Gambar</div>
-                        </div>
-                        <div class="flex flex-col flex-1 justify-center items-center px-1 text-center">
-                            <span class="font-extrabold text-[#103D34] text-xl leading-tight">${item.kode}</span>
-                            <span class="font-bold text-[#103D34] text-[12px] leading-tight mb-1">${item.nama}</span>
-                            <span class="text-[#103D34] text-[9px] leading-tight overflow-hidden text-ellipsis line-clamp-3">${item.deskripsi}</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = htmlContent;
-        });
-    </script>
 </body>
 </html>
