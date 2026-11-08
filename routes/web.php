@@ -77,6 +77,7 @@ Route::middleware('auth:petugas')->prefix('pengelola')->group(function () {
         Route::post('/detail-sampah', [JenisSampahController::class, 'store'])->name('pengelola.detail-sampah.store');
         Route::get('/detail-sampah/{jenis_sampah}/ubah', [JenisSampahController::class, 'edit'])->name('pengelola.detail-sampah.ubah');
         Route::put('/detail-sampah/{jenis_sampah}', [JenisSampahController::class, 'update'])->name('pengelola.detail-sampah.update');
+        Route::delete('/detail-sampah/{jenis_sampah}', [JenisSampahController::class, 'destroy'])->name('pengelola.detail-sampah.destroy');
 
         // Aksi Penjualan (Khusus Pengelola)
         Route::post('/penjualan', [LaporanController::class, 'storePenjualan'])->name('pengelola.penjualan.store');

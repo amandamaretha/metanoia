@@ -50,9 +50,6 @@
                     <a href="{{ route('pengelola.detail-sampah.tambah') }}" class="bg-[#5C8A8A] hover:bg-[#4a7070] text-white font-bold py-2.5 px-6 rounded-md shadow-md transition-colors text-[15px] flex items-center gap-2 border-[1.5px] border-white">
                         <i class="fa-solid fa-circle-plus"></i> Tambah Produk
                     </a>
-                    <a href="{{ route('pengelola.detail-sampah.ubah', $jenisSampah->first()?->id ?? 1) }}" class="bg-[#FF0000] hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-md shadow-md transition-colors text-[15px] flex items-center gap-2 border-[1.5px] border-white">
-                        <i class="fa-solid fa-pen-to-square"></i> Ubah Produk
-                    </a>
                 </div>
             </div>
 
@@ -60,6 +57,14 @@
                 <div class="px-10 pt-4">
                     <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
                         <span class="block sm:inline">{{ session('success') }}</span>
+                    </div>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="px-10 pt-4">
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                        <span class="block sm:inline">{{ session('error') }}</span>
                     </div>
                 </div>
             @endif
@@ -79,7 +84,15 @@
                             <div class="flex flex-col flex-1 justify-center items-center px-1 text-center">
                                 <span class="font-extrabold text-[#103D34] text-xl leading-tight">{{ $sampah->kode }}</span>
                                 <span class="font-bold text-[#103D34] text-[12px] leading-tight mb-1">{{ $sampah->nama }}</span>
-                                <span class="text-[#103D34] text-[9px] leading-tight overflow-hidden text-ellipsis line-clamp-3">{{ $sampah->deskripsi }}</span>
+                                <span class="text-[#103D34] text-[9px] leading-tight overflow-hidden text-ellipsis line-clamp-1 mb-1">{{ $sampah->deskripsi }}</span>
+                                <div class="flex items-center gap-1.5 mt-1">
+                                    <a href="{{ route('pengelola.detail-sampah.ubah', $sampah->id) }}" class="bg-[#FF0000] hover:bg-red-700 text-white font-bold py-1 px-2.5 rounded shadow-sm transition-colors text-[10px] flex items-center gap-1 border-[1.5px] border-white">
+                                        <i class="fa-solid fa-pen-to-square"></i> Ubah
+                                    </a>
+                                    <button type="button" onclick="hapusSampah('{{ route('pengelola.detail-sampah.destroy', $sampah->id) }}', '{{ addslashes($sampah->nama) }}')" class="bg-[#7F7F7F] hover:bg-gray-700 text-white font-bold py-1 px-2.5 rounded shadow-sm transition-colors text-[10px] flex items-center gap-1 border-[1.5px] border-white">
+                                        <i class="fa-solid fa-trash"></i> Hapus
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     @empty
@@ -92,5 +105,20 @@
 
         </main>
     </div>
+
+    <form id="deleteSampahForm" method="POST" style="display: none;">
+        @csrf
+        @method('DELETE')
+    </form>
+
+    <script>
+        function hapusSampah(actionUrl, nama) {
+            if (confirm('Apakah anda yakin ingin menghapus produk "' + nama + '"?')) {
+                const form = document.getElementById('deleteSampahForm');
+                form.action = actionUrl;
+                form.submit();
+            }
+        }
+    </script>
 </body>
 </html>

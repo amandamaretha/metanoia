@@ -721,4 +721,55 @@ class JenisSampahTest extends TestCase
             'Nama field form di Blade Ubah Produk berbeda dari aturan UpdateJenisSampahRequest!'
         );
     }
+
+    public function test_hapus_produk_berhasil_jika_belum_ada_setoran(): void
+    {
+        $dummy = JenisSampah::create([
+            'nama' => 'Sampah Hapus',
+            'kode' => 'HPS-01',
+            'kategori' => 'Plastik',
+        ]);
+
+        $response = $this->actingAs($this->pengelola, 'petugas')
+            ->delete(route('pengelola.detail-sampah.destroy', $dummy->id));
+
+        $response->assertRedirect(route('pengelola.detail-sampah'));
+        $response->assertSessionHas('success');
+        $this->assertDatabaseMissing('jenis_sampah', ['id' => $dummy->id]);
+    }
+
+    public function test_hapus_produk_ditolak_jika_memiliki_setoran(): void
+    {
+        $dummy = JenisSampah::create([
+            'nama' => 'Sampah Setoran',
+            'kode' => 'STR-01',
+            'kategori' => 'Kertas',
+        ]);
+
+        $nasabah = \App\Models\Nasabah::create([
+            'nama' => 'Nasabah Uji Hapus',
+            'nik' => '3201019999990001',
+            'alamat' => 'Alamat Uji',
+            'no_telp' => '6281999999998',
+            'password' => 'secret123',
+        ]);
+
+        \App\Models\Setoran::create([
+            'nasabah_id' => $nasabah->id,
+            'petugas_id' => $this->pengelola->id,
+            'jenis_sampah_id' => $dummy->id,
+            'kondisi' => 'sudah_dipilah',
+            'berat' => 1.5,
+            'harga_per_kg' => 3000,
+            'total_nilai' => 4500,
+            'tanggal' => now(),
+        ]);
+
+        $response = $this->actingAs($this->pengelola, 'petugas')
+            ->delete(route('pengelola.detail-sampah.destroy', $dummy->id));
+
+        $response->assertRedirect(route('pengelola.detail-sampah'));
+        $response->assertSessionHas('error');
+        $this->assertDatabaseHas('jenis_sampah', ['id' => $dummy->id]);
+    }
 }

@@ -79,8 +79,10 @@ class JenisSampahController extends Controller
     /**
      * Tampilkan formulir ubah produk sampah.
      */
-    public function edit(JenisSampah $jenisSampah): View
+    public function edit($jenis_sampah): View
     {
+        $id = $jenis_sampah instanceof JenisSampah ? $jenis_sampah->id : $jenis_sampah;
+        $jenisSampah = JenisSampah::findOrFail($id);
         $jenisSampah->load('hargaTerbaru');
 
         return view('dashboard.detail-sampah-edit', compact('jenisSampah'));
@@ -148,5 +150,29 @@ class JenisSampahController extends Controller
 
         return redirect()->route('pengelola.detail-sampah')
             ->with('success', 'Produk Berhasil di ubah!');
+    }
+
+    /**
+     * Hapus data produk sampah.
+     * Ditolak bila jenis sampah sudah memiliki riwayat setoran.
+     */
+    public function destroy($jenis_sampah): RedirectResponse
+    {
+        $id = $jenis_sampah instanceof JenisSampah ? $jenis_sampah->id : $jenis_sampah;
+        $jenisSampah = JenisSampah::findOrFail($id);
+
+        if ($jenisSampah->setoran()->exists()) {
+            return redirect()->route('pengelola.detail-sampah')
+                ->with('error', 'Produk tidak dapat dihapus karena sudah memiliki riwayat setoran.');
+        }
+
+        if ($jenisSampah->gambar && Storage::disk('public')->exists($jenisSampah->gambar)) {
+            Storage::disk('public')->delete($jenisSampah->gambar);
+        }
+
+        $jenisSampah->delete();
+
+        return redirect()->route('pengelola.detail-sampah')
+            ->with('success', 'Produk berhasil dihapus!');
     }
 }

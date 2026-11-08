@@ -104,7 +104,7 @@
                             @forelse ($nasabahList as $nasabah)
                             <div class="nasabah-item flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer transition-all"
                                  data-id="{{ $nasabah->id }}"
-                                 onclick="pilihNasabah(this)">
+                                 onclick="pilihNasabah('{{ $nasabah->id }}')">
                                 <div class="flex items-center gap-4 w-1/3">
                                     <div class="w-10 h-10 rounded-full border-2 border-yellow-400 overflow-hidden flex-shrink-0">
                                         <img src="https://i.pravatar.cc/150?img={{ ($nasabah->id % 70) + 1 }}" class="w-full h-full object-cover" alt="Profile">
@@ -377,17 +377,30 @@
         // ==========================================
         // LOGIKA VIEW 1 & AJAX CHECK NASABAH
         // ==========================================
-        function pilihNasabah(elemenYangDiklik) {
+        function pilihNasabah(param) {
+            let id;
+            let elemenYangDiklik = null;
+
+            if (typeof param === 'object' && param !== null && param.nodeType) {
+                elemenYangDiklik = param;
+                id = elemenYangDiklik.getAttribute('data-id');
+            } else {
+                id = param;
+                elemenYangDiklik = document.querySelector(`.nasabah-item[data-id="${id}"]`);
+            }
+
             let semuaNasabah = document.querySelectorAll(".nasabah-item");
             semuaNasabah.forEach(item => item.classList.remove("outline", "outline-4", "outline-[#3298E1]", "z-10"));
-            elemenYangDiklik.classList.add("outline", "outline-4", "outline-[#3298E1]", "z-10");
+            if (elemenYangDiklik) {
+                elemenYangDiklik.classList.add("outline", "outline-4", "outline-[#3298E1]", "z-10");
+            }
 
-            let id = elemenYangDiklik.getAttribute('data-id');
-            let fallbackNama = elemenYangDiklik.querySelector(".nasabah-nama") ? elemenYangDiklik.querySelector(".nasabah-nama").innerText.trim() : '';
+            let fallbackNama = elemenYangDiklik && elemenYangDiklik.querySelector(".nasabah-nama") ? elemenYangDiklik.querySelector(".nasabah-nama").innerText.trim() : '';
 
             if (id) {
                 // Panggil AJAX endpoint check-nasabah
-                fetch('{{ url("/pengelola/penimbangan/nasabah") }}/' + id, {
+                const checkUrl = "{{ route('pengelola.penimbangan.check-nasabah', ':id') }}".replace(':id', id);
+                fetch(checkUrl, {
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
