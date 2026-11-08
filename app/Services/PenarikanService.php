@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\MutasiSaldo;
 use App\Models\Nasabah;
 use App\Models\Penarikan;
+use App\Models\TransaksiKeuangan;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -99,6 +100,15 @@ class PenarikanService
                 'saldo_sesudah' => $lockedNasabah->saldo,
                 'referensi_tipe' => Penarikan::class,
                 'referensi_id' => $lockedPenarikan->id,
+            ]);
+
+            // Catat pengeluaran ke kas bendahara (DFD Level 1 Proses 5.0)
+            TransaksiKeuangan::create([
+                'tanggal' => now(),
+                'jenis' => 'pengeluaran',
+                'nominal' => $lockedPenarikan->nominal,
+                'keterangan' => 'Penarikan saldo nasabah ' . $lockedNasabah->nama . ' (ID Penarikan: ' . $lockedPenarikan->id . ')',
+                'petugas_id' => $petugasId,
             ]);
 
             // Update status penarikan

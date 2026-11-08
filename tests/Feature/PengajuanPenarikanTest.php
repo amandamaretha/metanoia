@@ -193,6 +193,14 @@ class PengajuanPenarikanTest extends TestCase
         $this->assertSame('penarikan', $mutasi->jenis);
         $this->assertSame(40000, $mutasi->jumlah);
         $this->assertSame(60000, $mutasi->saldo_sesudah);
+
+        // Transaksi keuangan (kas bendahara) tercatat sebagai pengeluaran (DFD 5.0)
+        $this->assertDatabaseHas('transaksi_keuangan', [
+            'petugas_id' => $this->petugasKetua->id,
+            'jenis' => 'pengeluaran',
+            'nominal' => 40000,
+            'keterangan' => 'Penarikan saldo nasabah ' . $this->nasabahAktif->nama . ' (ID Penarikan: ' . $penarikan->id . ')',
+        ]);
     }
 
     /**
