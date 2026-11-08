@@ -8,6 +8,7 @@ use App\Http\Controllers\Ketua\PengajuanPenarikanController as KetuaPengajuanPen
 use App\Http\Controllers\Nasabah\PengajuanPenarikanController as NasabahPengajuanPenarikanController;
 use App\Http\Controllers\Nasabah\RiwayatNasabahController;
 use App\Http\Controllers\Nasabah\ScanQrController;
+use App\Http\Controllers\Pengelola\DashboardController;
 use App\Http\Controllers\Pengelola\JenisSampahController;
 use App\Http\Controllers\Pengelola\LaporanController;
 use App\Http\Controllers\Pengelola\NasabahController;
@@ -63,9 +64,7 @@ Route::middleware('auth:petugas')->prefix('pengelola')->group(function () {
 
     // Pengelola: dashboard, nasabah, detail-sampah, aksi penjualan, penimbangan, tambah & kelola akun
     Route::middleware('jabatan:pengelola')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('dashboard.dashboard-pengelola');
-        })->name('pengelola.dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('pengelola.dashboard');
 
         Route::get('/nasabah', [NasabahController::class, 'index'])->name('pengelola.nasabah');
         Route::get('/nasabah/{nasabah}/edit', [NasabahController::class, 'edit'])->name('pengelola.nasabah.edit');

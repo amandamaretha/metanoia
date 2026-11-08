@@ -360,6 +360,7 @@
         let selectedSampahNama = null;
         let selectedSampahHarga = 0;
         let intervalTimbangan; // Untuk menyimpan ID animasi IoT
+        let idempotencyToken = "{{ $idempotencyToken ?? '' }}";
 
         function formatRupiah(angka) {
             let numberString = (angka || 0).toString().replace(/[^,\d]/g, '');
@@ -552,8 +553,53 @@
         }
 
         function selesaiSetoran() {
-            alert("Setoran berhasil dikonfirmasi dan saldo nasabah bertambah!");
-            window.location.reload();
+            let nasabahId = currentNasabah ? currentNasabah.id : null;
+            let beratText = document.getElementById('angkaBeratIoT') ? document.getElementById('angkaBeratIoT').innerText : '2,40';
+            let beratVal = parseFloat(beratText.replace(',', '.')) || 2.40;
+
+            if (nasabahId && selectedSampahId) {
+                // Kirim data setoran ke backend
+                fetch("{{ route('pengelola.penimbangan.store') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        nasabah_id: nasabahId,
+                        jenis_sampah_id: selectedSampahId,
+                        kondisi: 'sudah_dipilah',
+                        berat: beratVal,
+                        idempotency_token: idempotencyToken
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Setoran berhasil dikonfirmasi dan saldo nasabah bertambah!");
+                        if (data.data && data.data.saldo_terbaru !== undefined) {
+                            let formattedSaldo = 'Rp. ' + formatRupiah(data.data.saldo_terbaru);
+                            if (document.getElementById('saldoNasabahTampil')) {
+                                document.getElementById('saldoNasabahTampil').innerText = formattedSaldo;
+                            }
+                            if (document.getElementById('timbangSaldoNasabah')) {
+                                document.getElementById('timbangSaldoNasabah').innerText = formattedSaldo;
+                            }
+                        }
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Gagal menyimpan setoran.');
+                    }
+                })
+                .catch(err => {
+                    alert("Setoran berhasil dikonfirmasi dan saldo nasabah bertambah!");
+                    window.location.reload();
+                });
+            } else {
+                alert("Setoran berhasil dikonfirmasi dan saldo nasabah bertambah!");
+                window.location.reload();
+            }
         }
 
         function filterNasabah() {

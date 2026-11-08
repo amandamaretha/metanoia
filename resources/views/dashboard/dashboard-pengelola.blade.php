@@ -84,7 +84,7 @@
                 <!-- Card 1 -->
                 <div class="bg-[#00B4D8] rounded-xl text-white relative overflow-hidden flex flex-col justify-between shadow-md">
                     <div class="p-5 relative z-10">
-                        <h3 class="text-4xl font-bold">30</h3>
+                        <h3 class="text-4xl font-bold">{{ $totalNasabah ?? 0 }}</h3>
                         <p class="text-sm mt-1">Total Nasabah</p>
                     </div>
                     <i class="fa-solid fa-users absolute right-4 top-4 text-7xl text-white/20"></i>
@@ -96,7 +96,7 @@
                 <!-- Card 2 -->
                 <div class="bg-[#00A86B] rounded-xl text-white relative overflow-hidden flex flex-col justify-between shadow-md">
                     <div class="p-5 relative z-10">
-                        <h3 class="text-4xl font-bold">{{ $totalSetoran ?? 0 }}</h3>
+                        <h3 class="text-4xl font-bold">{{ $totalSetoranPekanIni ?? ($totalSetoran ?? 0) }}</h3>
                         <p class="text-sm mt-1">Setoran Pekan Ini</p>
                     </div>
                     <i class="fa-solid fa-wallet absolute right-4 top-4 text-7xl text-white/20"></i>
@@ -108,7 +108,7 @@
                 <!-- Card 3 -->
                 <div class="bg-[#F29F05] rounded-xl text-white relative overflow-hidden flex flex-col justify-between shadow-md">
                     <div class="p-5 relative z-10">
-                        <h3 class="text-4xl font-bold">45Kg</h3>
+                        <h3 class="text-4xl font-bold">{{ $totalBeratSampah ?? 0 }}Kg</h3>
                         <p class="text-sm mt-1">Sampah Masuk</p>
                     </div>
                     <i class="fa-solid fa-scale-unbalanced absolute right-4 top-4 text-7xl text-white/20"></i>
@@ -120,7 +120,7 @@
                 <!-- Card 4 -->
                 <div class="bg-[#D33F3F] rounded-xl text-white relative overflow-hidden flex flex-col justify-between shadow-md">
                     <div class="p-5 relative z-10">
-                        <h3 class="text-2xl font-bold mt-2">Rp 10.000.000</h3>
+                        <h3 class="text-2xl font-bold mt-2">Rp {{ number_format($totalNilaiSetoran ?? 0, 0, ',', '.') }}</h3>
                         <p class="text-sm mt-1">Nilai Setoran Pekan ini</p>
                     </div>
                     <i class="fa-solid fa-sack-dollar absolute right-4 top-4 text-7xl text-white/20"></i>
@@ -145,7 +145,7 @@
 
                     <!-- Chart Ringkasan Sampah -->
                     <div class="bg-white rounded-xl p-6 shadow-sm">
-                        <h4 class="text-gray-500 text-sm mb-4">Ringkasan Sampah Masuk Bulan September</h4>
+                        <h4 class="text-gray-500 text-sm mb-4">Ringkasan Sampah Masuk Bulan {{ now()->translatedFormat('F') }}</h4>
                         <div class="h-64">
                             <canvas id="ringkasanChart"></canvas>
                         </div>
@@ -166,41 +166,31 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr class="bg-gray-100">
-                                    <td class="py-2 px-2 rounded-l-md text-gray-700">Asep Suros..</td>
-                                    <td class="py-2 text-gray-700">Botol Putih P06</td>
-                                    <td class="py-2 px-2 rounded-r-md text-center"><span class="bg-[#F3E5F5] text-purple-700 py-1 px-3 rounded-md font-medium">9</span></td>
-                                </tr>
-                                <tr class="">
-                                    <td class="py-2 px-2 rounded-l-md text-gray-700">Angga badr..</td>
-                                    <td class="py-2 text-gray-700">Botol Putih P06</td>
-                                    <td class="py-2 px-2 rounded-r-md text-center"><span class="bg-[#F3E5F5] text-purple-700 py-1 px-3 rounded-md font-medium">11</span></td>
-                                </tr>
-                                <tr class="bg-gray-100">
-                                    <td class="py-2 px-2 rounded-l-md text-gray-700">Ggofur saep..</td>
-                                    <td class="py-2 text-gray-700">Botol Putih P06</td>
-                                    <td class="py-2 px-2 rounded-r-md text-center"><span class="bg-[#F3E5F5] text-purple-700 py-1 px-3 rounded-md font-medium">7</span></td>
-                                </tr>
-                                <tr class="">
-                                    <td class="py-2 px-2 rounded-l-md text-gray-700">Duki rusman..</td>
-                                    <td class="py-2 text-gray-700">Botol Putih P06</td>
-                                    <td class="py-2 px-2 rounded-r-md text-center"><span class="bg-[#F3E5F5] text-purple-700 py-1 px-3 rounded-md font-medium">10</span></td>
-                                </tr>
+                                @forelse ($transaksiTerbaru ?? [] as $index => $item)
+                                    <tr class="{{ $index % 2 === 0 ? 'bg-gray-100' : '' }}">
+                                        <td class="py-2 px-2 rounded-l-md text-gray-700">{{ Str::limit($item->nasabah->nama ?? '-', 14) }}</td>
+                                        <td class="py-2 text-gray-700">{{ Str::limit($item->jenisSampah->nama ?? '-', 16) }}</td>
+                                        <td class="py-2 px-2 rounded-r-md text-center"><span class="bg-[#F3E5F5] text-purple-700 py-1 px-3 rounded-md font-medium">{{ (float) ($item->berat ?? 0) }}</span></td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="py-4 text-center text-gray-500">Belum ada transaksi terbaru</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
 
+                        @if(empty($transaksiTerbaru) || count($transaksiTerbaru) < 4)
                         <!-- Placeholder baris kosong -->
                         <div class="mt-4 space-y-2">
                             <div class="bg-gray-200 h-6 rounded w-full"></div>
                             <div class="bg-gray-200 h-6 rounded w-full"></div>
-                            <div class="bg-gray-200 h-6 rounded w-full"></div>
-                            <div class="bg-gray-200 h-6 rounded w-full"></div>
-                            <div class="bg-gray-200 h-6 rounded w-full"></div>
                         </div>
+                        @endif
                     </div>
 
                     <div class="mt-4 text-right pt-4 border-t">
-                        <a href="#" class="text-blue-500 text-sm hover:underline">Selengkapnya <i class="fa-solid fa-arrow-right"></i></a>
+                        <a href="{{ route('pengelola.laporan') }}" class="text-blue-500 text-sm hover:underline">Selengkapnya <i class="fa-solid fa-arrow-right"></i></a>
                     </div>
                 </div>
 
@@ -215,10 +205,10 @@
         new Chart(ctxKategori, {
             type: 'bar',
             data: {
-                labels: ['Lainnya', 'Kaca', 'Logam', 'Kertas', 'Plastik'],
+                labels: {!! json_encode($kategoriLabels ?? ['Lainnya', 'Kaca', 'Logam', 'Kertas', 'Plastik']) !!},
                 datasets: [{
                     label: 'Satuan (Kg)',
-                    data: [11.5, 28.4, 38.2, 97, 97.5],
+                    data: {!! json_encode($kategoriNilai ?? [0, 0, 0, 0, 0]) !!},
                     backgroundColor: [
                         '#6EA8FF', // Lainnya
                         '#F8D361', // Kaca
@@ -240,7 +230,7 @@
                 scales: {
                     x: {
                         grid: { borderDash: [5, 5] },
-                        max: 100
+                        beginAtZero: true
                     },
                     y: {
                         grid: { display: false }
@@ -249,26 +239,19 @@
             }
         });
 
-        // Chart Ringkasan Sampah (Grouped Bar Chart)
+        // Chart Ringkasan Sampah (Bar Chart)
         const ctxRingkasan = document.getElementById('ringkasanChart').getContext('2d');
         new Chart(ctxRingkasan, {
             type: 'bar',
             data: {
-                labels: ['Pekan 1', 'Pekan 2', 'Pekan 3', 'Pekan 4', 'Pekan 5'],
+                labels: {!! json_encode($kategoriLabels ?? ['Plastik', 'Kertas', 'Logam', 'Kaca', 'Lainnya']) !!},
                 datasets: [
                     {
-                        label: 'Rabu',
-                        data: [45, 88, 93, 78, 100],
-                        backgroundColor: '#8B84E6',
-                        barPercentage: 0.8,
-                        categoryPercentage: 0.4
-                    },
-                    {
-                        label: 'Jumat',
-                        data: [20, 85, 88, 22, 85],
+                        label: 'Total Sampah (Kg)',
+                        data: {!! json_encode($kategoriNilai ?? [0, 0, 0, 0, 0]) !!},
                         backgroundColor: '#74D3B6',
                         barPercentage: 0.8,
-                        categoryPercentage: 0.4
+                        categoryPercentage: 0.5
                     }
                 ]
             },
@@ -284,7 +267,6 @@
                 scales: {
                     y: {
                         grid: { borderDash: [5, 5] },
-                        max: 100,
                         beginAtZero: true
                     },
                     x: {

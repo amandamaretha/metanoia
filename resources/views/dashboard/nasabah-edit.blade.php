@@ -110,7 +110,7 @@
                         <label class="w-1/3 text-gray-700 font-medium">Saldo</label>
                         <div class="w-2/3 flex items-center gap-3">
                             <span class="text-gray-700 font-medium">Rp</span>
-                            <input type="text" id="mainSaldoInput" value="{{ number_format($nasabah->saldo ?? 0, 0, ',', '.') }}" readonly class="border border-gray-300 bg-gray-50 rounded-md px-3 py-2 w-full max-w-sm focus:outline-none cursor-not-allowed">
+                            <input type="text" id="mainSaldoInput" value="{{ number_format($nasabah->saldo ?? 0, 0, ',', '.') }}" readonly disabled class="border border-gray-300 bg-gray-50 rounded-md px-3 py-2 w-full max-w-sm focus:outline-none cursor-not-allowed">
                             <i onclick="openEditModal('saldo', 'Saldo')" class="fa-solid fa-pen text-gray-500 cursor-pointer hover:text-blue-500 transition-colors p-2"></i>
                         </div>
                     </div>
@@ -224,6 +224,10 @@
         let activeFieldId = '';
 
         function openEditModal(fieldId, fieldName) {
+            // Sesuai DFD dan Kamus Data, Pengelola tidak boleh mengubah saldo secara manual
+            if (fieldId === 'saldo') {
+                return;
+            }
             activeFieldId = fieldId;
 
             // Atur teks peringatan

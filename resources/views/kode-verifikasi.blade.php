@@ -292,7 +292,7 @@
                 <p class="description">
                     Masukkan kode verifikasi yang telah dikirim ke nomor
                     <br>
-                    {{ session('telepon_masked', '08xx xxxx xx45') }}
+                    {{ session('reset.shown') ?? session('telepon_masked', '08xx xxxx xx45') }}
                 </p>
 
                 <div class="otp-container">
