@@ -131,16 +131,23 @@ Route::middleware(['auth:petugas', 'jabatan:bendahara'])->prefix('bendahara')->g
     Route::get('/laporan-keuangan/cetak', [TransaksiKeuanganController::class, 'cetakLaporan'])->name('bendahara.laporan-keuangan.cetak');
 });
 
-Route::middleware(['auth:petugas', 'jabatan:ketua'])->prefix('ketua')->group(function () {
-    Route::get('/beranda', function () {
-        return redirect()->route('ketua.pengajuan-penarikan');
-    })->name('ketua.beranda');
+Route::middleware('auth:petugas')->prefix('ketua')->group(function () {
+    // Khusus Ketua
+    Route::middleware('jabatan:ketua')->group(function () {
+        Route::get('/beranda', function () {
+            return redirect()->route('ketua.pengajuan-penarikan');
+        })->name('ketua.beranda');
 
-    // Rute Pengajuan Penarikan FASE 6
-    Route::get('/pengajuan-penarikan', [KetuaPengajuanPenarikanController::class, 'index'])->name('ketua.pengajuan-penarikan');
-    Route::get('/pengajuan-penarikan/{penarikan}', [KetuaPengajuanPenarikanController::class, 'show'])->name('ketua.pengajuan-penarikan.show');
-    Route::post('/pengajuan-penarikan/{penarikan}/setujui', [KetuaPengajuanPenarikanController::class, 'setujui'])->name('ketua.pengajuan-penarikan.setujui');
-    Route::post('/pengajuan-penarikan/{penarikan}/tolak', [KetuaPengajuanPenarikanController::class, 'tolak'])->name('ketua.pengajuan-penarikan.tolak');
+        // Rute Pengajuan Penarikan FASE 6
+        Route::get('/pengajuan-penarikan', [KetuaPengajuanPenarikanController::class, 'index'])->name('ketua.pengajuan-penarikan');
+        Route::get('/pengajuan-penarikan/{penarikan}', [KetuaPengajuanPenarikanController::class, 'show'])->name('ketua.pengajuan-penarikan.show');
+    });
+
+    // Dual-Role Approval: Ketua dan Bendahara
+    Route::middleware('jabatan:ketua,bendahara')->group(function () {
+        Route::post('/pengajuan-penarikan/{penarikan}/setujui', [KetuaPengajuanPenarikanController::class, 'setujui'])->name('ketua.pengajuan-penarikan.setujui');
+        Route::post('/pengajuan-penarikan/{penarikan}/tolak', [KetuaPengajuanPenarikanController::class, 'tolak'])->name('ketua.pengajuan-penarikan.tolak');
+    });
 });
 
 // ==========================================

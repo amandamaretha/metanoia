@@ -62,7 +62,7 @@ class PengajuanPenarikanController extends Controller
     }
 
     /**
-     * Setujui pengajuan penarikan oleh Ketua.
+     * Setujui pengajuan penarikan oleh Ketua atau Bendahara.
      */
     public function setujui(Request $request, Penarikan $penarikan): RedirectResponse
     {
@@ -91,7 +91,7 @@ class PengajuanPenarikanController extends Controller
     }
 
     /**
-     * Tolak pengajuan penarikan oleh Ketua.
+     * Tolak pengajuan penarikan oleh Ketua atau Bendahara.
      */
     public function tolak(Request $request, Penarikan $penarikan): RedirectResponse
     {

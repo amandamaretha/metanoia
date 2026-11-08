@@ -53,7 +53,7 @@ class PenarikanService
     }
 
     /**
-     * Ketua menyetujui pengajuan penarikan.
+     * Ketua atau Bendahara menyetujui pengajuan penarikan.
      * Menerapkan DB::transaction + lockForUpdate, cek ulang saldo, kurangi saldo, dan catat mutasi saldo.
      * Jika saldo tidak mencukupi saat disetujui, tolak persetujuan dengan status tetap 'menunggu'.
      * Keputusan hanya dapat diambil sekali.
@@ -62,9 +62,9 @@ class PenarikanService
      *
      * @throws InvalidArgumentException
      */
-    public function setujui(Penarikan $penarikan, int $petugasKetuaId, ?string $catatan = null): array
+    public function setujui(Penarikan $penarikan, int $petugasId, ?string $catatan = null): array
     {
-        return DB::transaction(function () use ($penarikan, $petugasKetuaId, $catatan) {
+        return DB::transaction(function () use ($penarikan, $petugasId, $catatan) {
             /** @var Penarikan $lockedPenarikan */
             $lockedPenarikan = Penarikan::where('id', $penarikan->id)->lockForUpdate()->firstOrFail();
 
@@ -105,7 +105,7 @@ class PenarikanService
             $lockedPenarikan->update([
                 'status' => 'disetujui',
                 'catatan' => $catatan,
-                'diputuskan_oleh' => $petugasKetuaId,
+                'diputuskan_oleh' => $petugasId,
                 'tanggal_keputusan' => now(),
             ]);
 
@@ -119,7 +119,7 @@ class PenarikanService
     }
 
     /**
-     * Ketua menolak pengajuan penarikan.
+     * Ketua atau Bendahara menolak pengajuan penarikan.
      * Saldo nasabah tidak berubah, status diubah menjadi 'ditolak'.
      * Keputusan hanya boleh diambil sekali.
      *
@@ -127,9 +127,9 @@ class PenarikanService
      *
      * @throws InvalidArgumentException
      */
-    public function tolak(Penarikan $penarikan, int $petugasKetuaId, ?string $catatan = null): array
+    public function tolak(Penarikan $penarikan, int $petugasId, ?string $catatan = null): array
     {
-        return DB::transaction(function () use ($penarikan, $petugasKetuaId, $catatan) {
+        return DB::transaction(function () use ($penarikan, $petugasId, $catatan) {
             /** @var Penarikan $lockedPenarikan */
             $lockedPenarikan = Penarikan::where('id', $penarikan->id)->lockForUpdate()->firstOrFail();
 
@@ -140,7 +140,7 @@ class PenarikanService
             $lockedPenarikan->update([
                 'status' => 'ditolak',
                 'catatan' => $catatan,
-                'diputuskan_oleh' => $petugasKetuaId,
+                'diputuskan_oleh' => $petugasId,
                 'tanggal_keputusan' => now(),
             ]);
 

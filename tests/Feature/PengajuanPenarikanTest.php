@@ -305,8 +305,8 @@ class PengajuanPenarikanTest extends TestCase
             ->get(route('ketua.pengajuan-penarikan'))
             ->assertStatus(403);
 
-        // Bendahara mencoba menyetujui
-        $this->actingAs($this->petugasBendahara, 'petugas')
+        // Pengelola mencoba menyetujui (selain ketua & bendahara ditolak)
+        $this->actingAs($this->petugasPengelola, 'petugas')
             ->post(route('ketua.pengajuan-penarikan.setujui', $penarikan))
             ->assertStatus(403);
 
@@ -314,6 +314,52 @@ class PengajuanPenarikanTest extends TestCase
         $this->actingAs($this->petugasPengelola, 'petugas')
             ->post(route('ketua.pengajuan-penarikan.tolak', $penarikan))
             ->assertStatus(403);
+    }
+
+    /**
+     * 10b. Bendahara (Dual-Role) berhasil menyetujui dan menolak pengajuan penarikan.
+     */
+    public function test_bendahara_berhasil_menyetujui_dan_menolak_pengajuan(): void
+    {
+        $penarikan1 = Penarikan::create([
+            'nasabah_id' => $this->nasabahAktif->id,
+            'nominal' => 30000,
+            'status' => 'menunggu',
+            'tanggal_pengajuan' => now(),
+        ]);
+
+        // Bendahara menyetujui pengajuan
+        $response1 = $this->actingAs($this->petugasBendahara, 'petugas')
+            ->post(route('ketua.pengajuan-penarikan.setujui', $penarikan1), [
+                'catatan' => 'Disetujui oleh Bendahara loket.',
+            ]);
+
+        $response1->assertSessionHas('success', 'Pengajuan Berhasil Disetujui!');
+
+        $fresh1 = $penarikan1->fresh();
+        $this->assertSame('disetujui', $fresh1->status);
+        $this->assertSame($this->petugasBendahara->id, $fresh1->diputuskan_oleh);
+        $this->assertSame(70000, $this->nasabahAktif->fresh()->saldo);
+
+        // Bendahara menolak pengajuan lain
+        $penarikan2 = Penarikan::create([
+            'nasabah_id' => $this->nasabahAktif->id,
+            'nominal' => 20000,
+            'status' => 'menunggu',
+            'tanggal_pengajuan' => now(),
+        ]);
+
+        $response2 = $this->actingAs($this->petugasBendahara, 'petugas')
+            ->post(route('ketua.pengajuan-penarikan.tolak', $penarikan2), [
+                'catatan' => 'Ditolak oleh Bendahara.',
+            ]);
+
+        $response2->assertSessionHas('warning', 'Mohon Maaf Pengajuan ditolak!');
+
+        $fresh2 = $penarikan2->fresh();
+        $this->assertSame('ditolak', $fresh2->status);
+        $this->assertSame($this->petugasBendahara->id, $fresh2->diputuskan_oleh);
+        $this->assertSame(70000, $this->nasabahAktif->fresh()->saldo);
     }
 
     /**
