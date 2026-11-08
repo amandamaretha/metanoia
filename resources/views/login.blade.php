@@ -197,12 +197,17 @@
             </p>
 
             <div class="button-group">
-                <a href="{{ route('login.show', config('metanoia.portals.petugas')) }}"
+                <a href="{{ url('/login/pengelola') }}"
                    class="btn btn-yellow">
-                    Masuk sebagai Petugas
+                    Masuk Sebagai Pengelola
                 </a>
 
-                <a href="{{ route('login.show', config('metanoia.portals.nasabah')) }}"
+                <a href="{{ url('/login/bendahara') }}"
+                   class="btn btn-yellow">
+                    Masuk sebagai Bendahara
+                </a>
+
+                <a href="{{ url('/login/nasabah') }}"
                    class="btn btn-green">
                     Masuk sebagai Nasabah
                 </a>

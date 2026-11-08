@@ -258,20 +258,10 @@
                     Silahkan masuk ke akun anda!
                 </p>
 
-                @if (session('success'))
-                    <p style="color: #27ae60; font-size: 13px; margin-bottom: 16px;">
-                        {{ session('success') }}
-                    </p>
-                @endif
-
-                @if (session('error'))
-                    <p style="color: #c0392b; font-size: 13px; margin-bottom: 16px;">
-                        {{ session('error') }}
-                    </p>
-                @endif
-
                 <form
-                    action="{{ route('login.attempt', ['role' => $portal ?? (array_search($role, config('metanoia.portal_labels', [])) ?: strtolower($role))]) }}"
+                    action="{{ $role === 'Pengelola'
+                        ? url('/login/pengelola')
+                        : url('/login/bendahara') }}"
                     method="POST"
                 >
                     @csrf
@@ -287,11 +277,6 @@
                             value="{{ old('telepon') }}"
                             required
                         >
-                        @error('telepon')
-                            <p style="color: #c0392b; font-size: 13px; margin-top: 6px;">
-                                {{ $message }}
-                            </p>
-                        @enderror
                     </div>
 
                     <div class="form-group">
@@ -306,7 +291,7 @@
                         >
                     </div>
 
-                    <a href="{{ route('password.forgot', ['role' => $portal ?? (array_search($role, config('metanoia.portal_labels', [])) ?: strtolower($role))]) }}" class="forgot">
+                    <a href="{{ route('password.forgot') }}" class="forgot">
                         Lupa password?
                     </a>
 

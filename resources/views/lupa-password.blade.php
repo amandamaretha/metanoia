@@ -262,7 +262,7 @@
         <section class="right-panel">
 
             <header class="header">
-                <a href="{{ isset($role) && $role ? route('login.show', $role) : url('/') }}"
+                <a href="{{ route('password.forgot') }}"
                    class="back"
                    aria-label="Kembali ke halaman sebelumnya">
                     &#8592;
@@ -283,25 +283,12 @@
                     di bawah ini
                 </p>
 
-                @if (session('status'))
-                    <p style="color: #598b8b; margin-bottom: 15px; text-align: center;">
-                        {{ session('status') }}
-                    </p>
-                @endif
-
-                @if (session('error'))
-                    <p style="color: #c0392b; margin-bottom: 15px; text-align: center;">
-                        {{ session('error') }}
-                    </p>
-                @endif
-
                 <input
                     type="tel"
                     name="telepon"
                     class="phone-input"
                     placeholder="Masukkan no Telephone"
                     autocomplete="tel"
-                    value="{{ old('telepon') }}"
                     required
                 >
 

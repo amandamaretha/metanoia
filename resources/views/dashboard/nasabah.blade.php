@@ -25,9 +25,9 @@
                 <!-- Profile Section -->
                 <div class="flex flex-col items-center mt-10 mb-8">
                     <div class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/20">
-                        <img src="{{ Auth::guard('petugas')->user()?->foto ? (filter_var(Auth::guard('petugas')->user()->foto, FILTER_VALIDATE_URL) ? Auth::guard('petugas')->user()->foto : asset(Auth::guard('petugas')->user()->foto)) : 'https://i.pravatar.cc/150?img=12' }}" alt="Profile" class="w-full h-full object-cover">
+                        <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
                     </div>
-                    <h2 class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
+                    <h2 class="mt-4 text-lg font-bold">Ammirudin suep</h2>
                 </div>
 
                 <!-- Navigation Menu -->
@@ -83,40 +83,21 @@
 
         <!-- MAIN CONTENT -->
         <main class="flex-1 p-8 overflow-y-auto">
-            <h1 class="text-4xl font-extrabold text-black mb-6">Data Nasabah</h1>
-
-            @if (session('success'))
-                <div class="mb-4 bg-emerald-100 border border-emerald-400 text-emerald-800 px-4 py-3 rounded-lg flex items-center gap-2">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>{{ session('success') }}</span>
-                </div>
-            @endif
-
-            @if (session('error'))
-                <div class="mb-4 bg-red-100 border border-red-400 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
-                    <i class="fa-solid fa-circle-exclamation"></i>
-                    <span>{{ session('error') }}</span>
-                </div>
-            @endif
+            <h1 class="text-4xl font-extrabold text-black mb-8">Data Nasabah</h1>
 
             <!-- PENCARIAN NASABAH -->
-            <form method="GET" action="{{ route('pengelola.nasabah') }}" class="flex items-center gap-3 mb-6">
+            <div class="flex items-center gap-3 mb-6">
                 <div class="relative w-80">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
-                    <input type="text" name="cari" value="{{ $cari ?? '' }}" placeholder="Cari nama nasabah disini"
+                    <input type="text" placeholder="Cari nama nasabah disini"
                         class="w-full pl-9 pr-4 py-2 rounded-md bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm">
                 </div>
-                <button type="submit" class="bg-[#5FA8DC] hover:bg-blue-600 text-white px-8 py-2 rounded-md text-sm font-semibold transition">
+                <button class="bg-[#5FA8DC] hover:bg-blue-600 text-white px-8 py-2 rounded-md text-sm font-semibold transition">
                     Cari
                 </button>
-                @if (!empty($cari))
-                    <a href="{{ route('pengelola.nasabah') }}" class="text-sm font-semibold text-gray-500 hover:text-gray-800">
-                        Reset
-                    </a>
-                @endif
-            </form>
+            </div>
 
             <!-- TABEL DATA NASABAH -->
             <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 shadow-sm overflow-x-auto">
@@ -125,64 +106,46 @@
                         <tr class="bg-table-header text-black font-bold">
                             <th class="py-3 px-4 border border-gray-300 text-center w-12">No</th>
                             <th class="py-3 px-4 border border-gray-300">Nama Nasabah</th>
-                            <th class="py-3 px-4 border border-gray-300">NIK</th>
                             <th class="py-3 px-4 border border-gray-300">No. Telp</th>
                             <th class="py-3 px-4 border border-gray-300">Alamat</th>
-                            <th class="py-3 px-4 border border-gray-300 text-center">Status</th>
-                            <th class="py-3 px-4 border border-gray-300 text-right">Saldo</th>
+                            <th class="py-3 px-4 border border-gray-300">Saldo</th>
                             <th class="py-3 px-4 border border-gray-300 text-center w-36">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-300">
-                        @forelse ($nasabahList as $index => $item)
-                        <tr class="hover:bg-gray-200/50 transition bg-white">
-                            <td class="py-3 px-4 border border-gray-300 text-center font-medium">
-                                {{ $nasabahList->firstItem() ? ($nasabahList->firstItem() + $index) : ($index + 1) }}
-                            </td>
-                            <td class="py-3 px-4 border border-gray-300 font-medium">{{ $item->nama }}</td>
-                            <td class="py-3 px-4 border border-gray-300 font-mono text-xs">{{ $item->masked_nik }}</td>
-                            <td class="py-3 px-4 border border-gray-300">{{ $item->no_telp }}</td>
-                            <td class="py-3 px-4 border border-gray-300">{{ $item->alamat }}</td>
-                            <td class="py-3 px-4 border border-gray-300 text-center">
-                                <span class="px-2 py-0.5 rounded text-xs font-bold {{ $item->status === 'aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
-                                    {{ ucfirst($item->status) }}
-                                </span>
-                            </td>
-                            <td class="py-3 px-4 border border-gray-300 font-semibold text-right whitespace-nowrap">
-                                Rp {{ number_format($item->saldo, 0, ',', '.') }}
-                            </td>
+                        @php
+                            $nasabahList = [
+                                ['no' => 1, 'nama' => 'Hafidh Tedi Setiawan', 'telp' => '089648354570', 'alamat' => 'Jl.Cikondang No.36 RT01...', 'saldo' => '3211097426832'],
+                                ['no' => 2, 'nama' => 'Ujang sueb', 'telp' => '089648354570', 'alamat' => 'Jl.Cikondang No.36 RT01...', 'saldo' => '3211097426832'],
+                                ['no' => 3, 'nama' => 'Asep Surahmat', 'telp' => '089648354570', 'alamat' => 'Jl.Cikondang No.36 RT01...', 'saldo' => '3211097426832'],
+                            ];
+                        @endphp
+
+                        @foreach ($nasabahList as $item)
+                        <tr class="hover:bg-gray-200/50 transition">
+                            <td class="py-3 px-4 border border-gray-300 text-center font-medium">{{ $item['no'] }}</td>
+                            <td class="py-3 px-4 border border-gray-300 font-medium">{{ $item['nama'] }}</td>
+                            <td class="py-3 px-4 border border-gray-300">{{ $item['telp'] }}</td>
+                            <td class="py-3 px-4 border border-gray-300">{{ $item['alamat'] }}</td>
+                            <td class="py-3 px-4 border border-gray-300 font-semibold">{{ $item['saldo'] }}</td>
                             <td class="py-3 px-4 border border-gray-300 text-center">
                                 <div class="flex justify-center space-x-2">
-                                    <a href="{{ route('pengelola.nasabah.edit', $item->id) }}" class="bg-[#5FA8DC] hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold inline-block">
-                                        Edit
-                                    </a>
-                                    <button type="button" onclick="openDeleteModal('{{ $item->id }}', '{{ addslashes($item->nama) }}')" class="bg-[#F86363] hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold">
-                                        Hapus
-                                    </button>
+                                    <!-- Tombol Edit diarahkan ke halaman Edit -->
+                                    <a href="{{ route('pengelola.nasabah.edit') }}" class="bg-[#5FA8DC] hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold inline-block">Edit</a>
+                                    <!-- Tombol Hapus memicu fungsi openDeleteModal() di JavaScript -->
+                                    <button onclick="openDeleteModal('{{ $item['nama'] }}')" class="bg-[#F86363] hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold">Hapus</button>
                                 </div>
                             </td>
                         </tr>
-                        @empty
-                        <tr>
-                            <td colspan="8" class="py-8 text-center text-gray-500 font-medium">
-                                Tidak ada data nasabah yang ditemukan.
-                            </td>
-                        </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
-
-                @if ($nasabahList->hasPages())
-                    <div class="mt-4 px-2">
-                        {{ $nasabahList->links() }}
-                    </div>
-                @endif
             </div>
         </main>
     </div>
 
     <!-- ============================================== -->
-    <!-- MODAL KONFIRMASI HAPUS                         -->
+    <!-- MODAL KONFIRMASI HAPUS (Hidden by default)     -->
     <!-- ============================================== -->
     <div id="deleteModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <!-- Backdrop transparan gelap -->
@@ -190,41 +153,49 @@
 
         <!-- Konten Modal -->
         <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden transform transition-all">
+            <!-- Header Modal warna hijau (mengikuti gambar referensi) -->
             <div class="h-12 bg-[#5C8A8A]"></div>
 
             <div class="px-8 pb-10 pt-6 text-center">
+                <!-- Icon Tanda Seru Merah -->
                 <div class="flex justify-center mb-6">
                     <div class="w-28 h-28 border-[6px] border-[#F86363] rounded-full flex items-center justify-center">
                         <i class="fa-solid fa-exclamation text-7xl text-[#F86363]"></i>
                     </div>
                 </div>
 
+                <!-- Judul -->
                 <h2 class="text-[32px] font-bold text-[#F86363] mb-4">Konfirmasi Hapus</h2>
-                <p class="text-gray-600 text-xl mb-10">Apakah anda yakin ingin menghapus akun "<span id="modalNasabahName"></span>"?</p>
 
-                <form id="deleteForm" method="POST" action="" class="flex justify-center gap-6">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="bg-[#5FA8DC] hover:bg-blue-600 text-white font-bold py-3 w-40 rounded-lg shadow-md transition-colors text-xl">
+                <!-- Teks Dinamis -->
+                <p class="text-gray-600 text-xl mb-10">Apakah anda yakin ingin menghapus akun "<span id="modalNasabahName">Hafidh Tedi Setiawan</span>"?</p>
+
+                <!-- Tombol -->
+                <div class="flex justify-center gap-6">
+                    <!-- Tombol Ya (Warna Biru) -->
+                    <button class="bg-[#5FA8DC] hover:bg-blue-600 text-white font-bold py-3 w-40 rounded-lg shadow-md transition-colors text-xl">
                         Ya
                     </button>
-                    <button type="button" onclick="closeDeleteModal()" class="bg-[#7F7F7F] hover:bg-gray-600 text-white font-bold py-3 w-40 rounded-lg shadow-md transition-colors text-xl">
+                    <!-- Tombol Tidak (Warna Abu-abu) untuk menutup modal -->
+                    <button onclick="closeDeleteModal()" class="bg-[#7F7F7F] hover:bg-gray-600 text-white font-bold py-3 w-40 rounded-lg shadow-md transition-colors text-xl">
                         Tidak
                     </button>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Script JavaScript untuk memunculkan/menyembunyikan Modal -->
     <script>
-        function openDeleteModal(id, namaNasabah) {
+        function openDeleteModal(namaNasabah) {
+            // Ubah teks nama di dalam modal secara dinamis
             document.getElementById('modalNasabahName').innerText = namaNasabah;
-            document.getElementById('deleteForm').action = '/pengelola/nasabah/' + id;
+            // Tampilkan modal
             document.getElementById('deleteModal').classList.remove('hidden');
         }
 
         function closeDeleteModal() {
+            // Sembunyikan modal
             document.getElementById('deleteModal').classList.add('hidden');
         }
     </script>

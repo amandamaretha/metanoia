@@ -31,9 +31,9 @@
             <div>
                 <div class="flex flex-col items-center mt-10 mb-8">
                     <div class="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md">
-                        <img src="{{ Auth::guard('petugas')->user()?->foto ? (filter_var(Auth::guard('petugas')->user()->foto, FILTER_VALIDATE_URL) ? Auth::guard('petugas')->user()->foto : asset(Auth::guard('petugas')->user()->foto)) : 'https://i.pravatar.cc/150?img=12' }}" alt="Profile" class="w-full h-full object-cover">
+                        <img src="https://i.pravatar.cc/150?img=12" alt="Profile" class="w-full h-full object-cover">
                     </div>
-                    <h2 class="mt-4 text-lg font-bold">{{ Auth::guard('petugas')->user()->nama ?? 'Pengelola' }}</h2>
+                    <h2 class="mt-4 text-lg font-bold">Ammirudin suep</h2>
                 </div>
 
                 <nav class="px-4 space-y-2">
@@ -72,153 +72,178 @@
             <div class="w-full max-w-4xl flex flex-col">
                 <h1 class="text-[32px] font-extrabold text-black mb-6">Ubah Produk</h1>
 
-                @if ($errors->any())
-                    <div class="mb-6 bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm">
-                        <p class="font-bold">Periksa kembali isian Anda.</p>
-                    </div>
-                @endif
-
                 <!-- Pembungkus Kartu Putih Utama -->
                 <div class="bg-white rounded-xl shadow-md p-10 w-full min-h-[500px] border border-gray-200 flex justify-center items-center">
 
                     <!-- Kartu Hijau Form Edit -->
-                    <form action="{{ route('pengelola.detail-sampah.update', $jenisSampah->id) }}" method="POST" enctype="multipart/form-data" novalidate class="bg-[#C2DCD6] border-2 border-[#a7c5be] rounded-[20px] p-8 w-full max-w-3xl shadow-lg flex flex-col md:flex-row gap-8 relative pb-20">
-                        @csrf
-                        @method('PUT')
+                    <div class="bg-[#C2DCD6] border-2 border-[#a7c5be] rounded-[20px] p-8 w-full max-w-3xl shadow-lg flex gap-8 relative pb-20">
 
                         <!-- Sisi Kiri: Gambar Produk -->
-                        <div class="flex flex-col items-center flex-shrink-0">
-                            <div class="w-[220px] h-[220px] bg-white rounded-xl flex items-center justify-center overflow-hidden border border-gray-300 shadow-sm p-2 relative">
-                                <img id="editImagePreview" src="{{ $jenisSampah->gambar ? asset('storage/' . $jenisSampah->gambar) : '' }}" alt="{{ $jenisSampah->nama }}" class="{{ $jenisSampah->gambar ? '' : 'hidden' }} w-full h-full object-cover rounded-lg">
-                                <div id="editImagePlaceholder" class="{{ $jenisSampah->gambar ? 'hidden' : '' }} w-full h-full bg-black/90 rounded-lg flex flex-col items-center justify-center text-white">
-                                    <i class="fa-solid fa-bucket text-6xl mb-2"></i>
-                                    <span class="text-xs font-bold text-center">Gambar Produk</span>
-                                </div>
+                        <div class="w-[220px] h-[220px] bg-white rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-300 shadow-sm p-2">
+                            <!-- Placeholder Gambar Ember Hitam (Atau ikon jika tidak ada gambar) -->
+                            <div class="w-full h-full bg-black/90 rounded-lg flex flex-col items-center justify-center text-white">
+                                <i class="fa-solid fa-bucket text-6xl mb-2"></i>
+                                <span class="text-xs font-bold text-center">Gambar Produk</span>
                             </div>
-                            <label class="mt-3 text-xs bg-[#5C8A8A] text-white px-3 py-1.5 rounded cursor-pointer hover:bg-[#4a7070] inline-block font-semibold shadow-sm transition-colors">
-                                <i class="fa-solid fa-camera mr-1"></i> Ganti Gambar
-                                <input type="file" name="gambar" id="editImageInput" class="hidden" accept="image/jpeg,image/png,image/webp,image/jpg">
-                            </label>
-                            @error('gambar') <p class="text-red-600 text-xs mt-1 text-center">{{ $message }}</p> @enderror
                         </div>
 
                         <!-- Sisi Kanan: Form Input -->
-                        <div class="flex-1 flex flex-col space-y-3">
+                        <div class="flex-1 flex flex-col space-y-4">
 
                             <!-- Nama Produk -->
                             <div class="flex items-center gap-4">
-                                <label class="w-28 text-gray-700 font-bold text-[13px] leading-tight">Nama<br>Produk</label>
-                                <div class="input-icon-wrapper flex-1">
-                                    <input type="text" name="nama" id="editNama" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-800 font-medium text-sm shadow-sm" value="{{ old('nama', $jenisSampah->nama) }}">
+                                <label class="w-24 text-gray-500 font-bold text-[13px] leading-tight">Nama<br>Produk</label>
+                                <div class="input-icon-wrapper">
+                                    <input type="text" id="editNama" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-400 font-medium text-sm shadow-sm" value="Ember Hitam">
                                     <i class="fa-solid fa-pen"></i>
                                 </div>
                             </div>
-                            @error('nama') <p class="text-red-600 text-xs pl-32">{{ $message }}</p> @enderror
-
-                            <!-- Kode Produk -->
-                            <div class="flex items-center gap-4">
-                                <label class="w-28 text-gray-700 font-bold text-[13px] leading-tight">Kode<br>Produk</label>
-                                <div class="input-icon-wrapper flex-1">
-                                    <input type="text" name="kode" id="editKode" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-800 font-medium text-sm shadow-sm" value="{{ old('kode', $jenisSampah->kode) }}">
-                                    <i class="fa-solid fa-pen"></i>
-                                </div>
-                            </div>
-                            @error('kode') <p class="text-red-600 text-xs pl-32">{{ $message }}</p> @enderror
-
-                            <!-- Kategori Produk -->
-                            <div class="flex items-center gap-4">
-                                <label class="w-28 text-gray-700 font-bold text-[13px] leading-tight">Kategori<br>Produk</label>
-                                <div class="input-icon-wrapper flex-1">
-                                    <input type="text" name="kategori" id="editKategori" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-800 font-medium text-sm shadow-sm" value="{{ old('kategori', $jenisSampah->kategori) }}">
-                                    <i class="fa-solid fa-pen"></i>
-                                </div>
-                            </div>
-                            @error('kategori') <p class="text-red-600 text-xs pl-32">{{ $message }}</p> @enderror
 
                             <!-- Deskripsi Produk -->
                             <div class="flex items-start gap-4">
-                                <label class="w-28 text-gray-700 font-bold text-[13px] leading-tight pt-2">Deskripsi<br>Produk</label>
-                                <div class="input-icon-wrapper flex-1">
-                                    <textarea name="deskripsi" id="editDeskripsi" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-800 font-medium text-sm shadow-sm h-20 resize-none">{{ old('deskripsi', $jenisSampah->deskripsi) }}</textarea>
+                                <label class="w-24 text-gray-500 font-bold text-[13px] leading-tight pt-2">Deskripsi<br>Produk</label>
+                                <div class="input-icon-wrapper">
+                                    <textarea id="editDeskripsi" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-400 font-medium text-sm shadow-sm h-24 resize-none">Jenis botol/wadah plastik berbahan PP, HDPE yang berwarna hitam / abu-abu.</textarea>
                                     <i class="fa-solid fa-pen"></i>
                                 </div>
                             </div>
-                            @error('deskripsi') <p class="text-red-600 text-xs pl-32">{{ $message }}</p> @enderror
 
-                            @php
-                                $hargaSudah = $jenisSampah->getHarga('sudah_dipilah')?->harga_per_kg;
-                                $hargaBelum = $jenisSampah->getHarga('belum_dipilah')?->harga_per_kg;
-                                $hargaCampur = $jenisSampah->getHarga('campuran')?->harga_per_kg;
-                            @endphp
+                            <!-- Harga & Kode Produk -->
+                            <div class="flex items-center gap-4 mt-2">
+                                <label class="w-24 text-gray-500 font-bold text-[13px] leading-tight">Harga<br>Produk</label>
+                                <div class="input-icon-wrapper w-32">
+                                    <input type="text" id="editHarga" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-400 font-medium text-sm shadow-sm" value="2.400">
+                                    <i class="fa-solid fa-pen"></i>
+                                </div>
 
-                            <!-- Harga Sudah Dipilah -->
-                            <div class="flex items-center gap-4">
-                                <label class="w-28 text-gray-700 font-bold text-[13px] leading-tight">Sudah Dipilah<br><span class="text-[11px] font-normal text-gray-600">(Rp/kg)</span></label>
-                                <div class="input-icon-wrapper flex-1">
-                                    <input type="text" name="harga_sudah_dipilah" id="editHargaSudah" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-800 font-medium text-sm shadow-sm" value="{{ old('harga_sudah_dipilah', $hargaSudah ? number_format($hargaSudah, 0, ',', '.') : '') }}">
+                                <label class="ml-2 w-16 text-gray-500 font-bold text-[13px] leading-tight text-center">Kode<br>Produk</label>
+                                <div class="input-icon-wrapper w-28">
+                                    <!-- ID Lama disimpan tersembunyi agar kode acuan pencarian di JS tidak hilang -->
+                                    <input type="hidden" id="kodeLama" value="P0B">
+                                    <input type="text" id="editKode" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-400 font-medium text-sm shadow-sm" value="P0B">
                                     <i class="fa-solid fa-pen"></i>
                                 </div>
                             </div>
-                            @error('harga_sudah_dipilah') <p class="text-red-600 text-xs pl-32">{{ $message }}</p> @enderror
-
-                            <!-- Harga Belum Dipilah -->
-                            <div class="flex items-center gap-4">
-                                <label class="w-28 text-gray-700 font-bold text-[13px] leading-tight">Belum Dipilah<br><span class="text-[11px] font-normal text-gray-600">(Rp/kg)</span></label>
-                                <div class="input-icon-wrapper flex-1">
-                                    <input type="text" name="harga_belum_dipilah" id="editHargaBelum" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-800 font-medium text-sm shadow-sm" value="{{ old('harga_belum_dipilah', $hargaBelum ? number_format($hargaBelum, 0, ',', '.') : '') }}">
-                                    <i class="fa-solid fa-pen"></i>
-                                </div>
-                            </div>
-                            @error('harga_belum_dipilah') <p class="text-red-600 text-xs pl-32">{{ $message }}</p> @enderror
-
-                            <!-- Harga Campuran -->
-                            <div class="flex items-center gap-4">
-                                <label class="w-28 text-gray-700 font-bold text-[13px] leading-tight">Campuran<br><span class="text-[11px] font-normal text-gray-600">(Rp/kg)</span></label>
-                                <div class="input-icon-wrapper flex-1">
-                                    <input type="text" name="harga_campuran" id="editHargaCampuran" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#5C8A8A] text-gray-800 font-medium text-sm shadow-sm" value="{{ old('harga_campuran', $hargaCampur ? number_format($hargaCampur, 0, ',', '.') : '') }}">
-                                    <i class="fa-solid fa-pen"></i>
-                                </div>
-                            </div>
-                            @error('harga_campuran') <p class="text-red-600 text-xs pl-32">{{ $message }}</p> @enderror
 
                         </div>
 
                         <!-- Grup Tombol Aksi di Bawah Kanan Kartu Hijau -->
                         <div class="absolute bottom-6 right-8 flex items-center gap-3">
-                            <a href="{{ route('pengelola.detail-sampah') }}" class="bg-[#FF0A0A] hover:bg-red-700 text-white font-bold py-1.5 px-8 rounded shadow-sm text-sm border border-red-500 transition-colors inline-block text-center">
+                            <button type="button" onclick="batal()" class="bg-[#FF0A0A] hover:bg-red-700 text-white font-bold py-1.5 px-8 rounded shadow-sm text-sm border border-red-500 transition-colors">
                                 Batal
-                            </a>
-                            <button type="submit" class="bg-[#59A835] hover:bg-green-600 text-white font-bold py-1.5 px-6 rounded shadow-sm text-sm border border-green-500 transition-colors">
-                                Simpan Perubahan
+                            </button>
+                            <button type="button" onclick="simpanPerubahan()" class="bg-[#59A835] hover:bg-green-600 text-white font-bold py-1.5 px-6 rounded shadow-sm text-sm border border-green-500 transition-colors">
+                                Simpan Perubahann
                             </button>
                         </div>
 
-                    </form>
+                    </div>
                 </div>
             </div>
 
         </main>
     </div>
 
-    <!-- JAVASCRIPT PRATINJAU GAMBAR -->
-    <script>
-        const imageInput = document.getElementById('editImageInput');
-        const imagePreview = document.getElementById('editImagePreview');
-        const imagePlaceholder = document.getElementById('editImagePlaceholder');
+    <!-- ============================================== -->
+    <!-- MODAL POP UP SUKSES UBAH PRODUK -->
+    <!-- ============================================== -->
+    <div id="modalSukses" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <!-- Latar Gelap Transparan -->
+        <div class="absolute inset-0 bg-black/20 backdrop-blur-[1px] transition-opacity"></div>
 
-        if (imageInput && imagePreview) {
-            imageInput.addEventListener('change', function () {
-                const file = this.files && this.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        imagePreview.src = e.target.result;
-                        imagePreview.classList.remove('hidden');
-                        if (imagePlaceholder) imagePlaceholder.classList.add('hidden');
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
+        <!-- Box Modal -->
+        <div class="relative bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] w-full max-w-md flex flex-col items-center pb-8 z-10 overflow-hidden">
+
+            <!-- Header Modal Biru Kehijauan -->
+            <div class="bg-[#5C8A8A] w-full h-12 flex-shrink-0"></div>
+
+            <!-- Lingkaran Checklist Hijau -->
+            <div class="mt-8 mb-6">
+                <div class="w-20 h-20 bg-[#65C622] rounded-full flex items-center justify-center shadow-md">
+                    <i class="fa-solid fa-check text-white text-4xl"></i>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-extrabold text-black text-center leading-tight mb-8">
+                Produk Berhasil<br>di ubah!
+            </h2>
+
+            <!-- Tombol Selesai Modal -->
+            <button onclick="tutupModalSelesai()" class="bg-[#65C622] hover:bg-[#57a81d] text-white font-bold py-1.5 px-10 rounded text-sm shadow-sm transition-colors">
+                Selesai
+            </button>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIKA EDIT & MODAL -->
+    <script>
+        // Logika saat halaman dimuat
+        document.addEventListener("DOMContentLoaded", function() {
+            // Simulasi: Mengambil data dari localStorage untuk mengisi form.
+            // Secara default kita akan mencari 'P0B' (Ember Hitam) sebagai contoh desain mockup
+            let db = JSON.parse(localStorage.getItem('db_jenis_sampah')) || [];
+            let produkTarget = db.find(p => p.kode === 'P0B');
+
+            if (produkTarget) {
+                // Jika ditemukan di database sementara, load isinya
+                document.getElementById('editNama').value = produkTarget.nama;
+                document.getElementById('editDeskripsi').value = produkTarget.deskripsi;
+                document.getElementById('editKode').value = produkTarget.kode;
+                document.getElementById('editHarga').value = produkTarget.harga || '2.400';
+            }
+        });
+
+        // 1. Simpan Perubahan ke LocalStorage
+        function simpanPerubahan() {
+            let namaBaru = document.getElementById('editNama').value.trim();
+            let deskripsiBaru = document.getElementById('editDeskripsi').value.trim();
+            let kodeBaru = document.getElementById('editKode').value.trim();
+            let hargaBaru = document.getElementById('editHarga').value.trim();
+            let kodeAcuan = document.getElementById('kodeLama').value;
+
+            if(namaBaru === '' || kodeBaru === '') {
+                alert("Nama Produk dan Kode Produk tidak boleh kosong!");
+                return;
+            }
+
+            // Ambil database sementara
+            let db = JSON.parse(localStorage.getItem('db_jenis_sampah')) || [];
+
+            // Cari indeks produk yang ingin diubah (Acuan P0B atau kode sebelumnya)
+            let index = db.findIndex(p => p.kode === kodeAcuan);
+
+            if (index !== -1) {
+                // Update datanya
+                db[index].nama = namaBaru;
+                db[index].deskripsi = deskripsiBaru;
+                db[index].kode = kodeBaru;
+                db[index].harga = hargaBaru;
+
+                // Update acuan jika kode ikut diubah user
+                document.getElementById('kodeLama').value = kodeBaru;
+            } else {
+                // Jika tidak ada di DB, tambahkan sebagai data baru
+                db.push({ kode: kodeBaru, nama: namaBaru, deskripsi: deskripsiBaru, harga: hargaBaru });
+            }
+
+            // Simpan kembali
+            localStorage.setItem('db_jenis_sampah', JSON.stringify(db));
+
+            // Munculkan Modal Notifikasi Berhasil
+            document.getElementById('modalSukses').classList.remove('hidden');
+        }
+
+        // 2. Tutup Modal & Kembali ke Grid
+        function tutupModalSelesai() {
+            document.getElementById('modalSukses').classList.add('hidden');
+            // Kembali ke halaman detail sampah (grid)
+            window.location.href = "{{ route('pengelola.detail-sampah') }}";
+        }
+
+        // 3. Tombol Batal
+        function batal() {
+            window.location.href = "{{ route('pengelola.detail-sampah') }}";
         }
     </script>
 </body>
