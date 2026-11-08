@@ -110,7 +110,7 @@ class LoginController extends Controller
         $request->session()->regenerate();
 
         if ($guard === 'petugas') {
-            $petugas = Auth::guard('petugas')->user();
+            $petugas = $request->user('petugas') ?? Auth::guard('petugas')->user();
 
             return match ($petugas->jabatan) {
                 'pengelola' => redirect()->intended(route('pengelola.dashboard')),

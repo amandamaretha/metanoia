@@ -259,9 +259,7 @@
                 </p>
 
                 <form
-                    action="{{ $role === 'Pengelola'
-                        ? url('/login/pengelola')
-                        : url('/login/bendahara') }}"
+                    action="{{ route('login.attempt', $portal ?? strtolower($role)) }}"
                     method="POST"
                 >
                     @csrf

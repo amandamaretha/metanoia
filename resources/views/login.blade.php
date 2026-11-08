@@ -197,17 +197,17 @@
             </p>
 
             <div class="button-group">
-                <a href="{{ url('/login/pengelola') }}"
+                <a href="{{ route('login.show', 'petugas') }}"
                    class="btn btn-yellow">
                     Masuk Sebagai Pengelola
                 </a>
 
-                <a href="{{ url('/login/bendahara') }}"
+                <a href="{{ route('login.show', 'petugas') }}"
                    class="btn btn-yellow">
                     Masuk sebagai Bendahara
                 </a>
 
-                <a href="{{ url('/login/nasabah') }}"
+                <a href="{{ route('login.show', 'nasabah') }}"
                    class="btn btn-green">
                     Masuk sebagai Nasabah
                 </a>

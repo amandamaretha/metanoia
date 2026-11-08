@@ -21,6 +21,7 @@ class LoginRouteTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee(config('metanoia.portal_labels.petugas'));
+        $response->assertSee(route('login.attempt', config('metanoia.portals.petugas')));
     }
 
     public function test_halaman_login_role_nasabah_berhasil_dibuka(): void
@@ -29,6 +30,7 @@ class LoginRouteTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee(config('metanoia.portal_labels.nasabah'));
+        $response->assertSee(route('login.attempt', config('metanoia.portals.nasabah')));
     }
 
     public function test_role_tidak_dikenal_menghasilkan_404(): void
