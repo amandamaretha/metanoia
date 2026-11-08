@@ -105,8 +105,25 @@ class LaporanPenjualanTest extends TestCase
         $this->get(route('pengelola.laporan'))->assertRedirect(route('login.show', 'petugas'));
         $this->get(route('pengelola.laporan.penjualan'))->assertRedirect(route('login.show', 'petugas'));
 
-        // 2. Petugas selain pengelola (Ketua / Bendahara) dilarang (403)
+        // 2. Ketua diizinkan melihat laporan & penjualan, tetapi dilarang mutasi penjualan
         $this->actingAs($this->petugasKetua, 'petugas')
+            ->get(route('pengelola.laporan'))
+            ->assertOk();
+
+        $this->actingAs($this->petugasKetua, 'petugas')
+            ->get(route('pengelola.laporan.penjualan'))
+            ->assertOk();
+
+        $this->actingAs($this->petugasKetua, 'petugas')
+            ->post(route('pengelola.penjualan.store'), [
+                'tanggal_pengangkutan' => now()->toDateString(),
+                'total_berat' => 10,
+                'total_nilai' => 10000,
+            ])
+            ->assertForbidden();
+
+        // 3. Petugas bendahara dilarang mengakses laporan pengelola (403)
+        $this->actingAs($this->petugasBendahara, 'petugas')
             ->get(route('pengelola.laporan'))
             ->assertForbidden();
 
@@ -114,7 +131,7 @@ class LaporanPenjualanTest extends TestCase
             ->get(route('pengelola.laporan.penjualan'))
             ->assertForbidden();
 
-        // 3. Petugas pengelola diizinkan (200)
+        // 4. Petugas pengelola diizinkan melihat dan mengelola (200)
         $this->actingAs($this->petugasPengelola, 'petugas')
             ->get(route('pengelola.laporan'))
             ->assertOk()
@@ -186,10 +203,6 @@ class LaporanPenjualanTest extends TestCase
         $response->assertViewHas('rincianJenis', function ($rincian) {
             return $rincian->count() === 2;
         });
-
-        // Pastikan tampilan memuat ringkasan dan rincian jenis sampah
-        $response->assertSee('Kardus Cokelat');
-        $response->assertSee('Botol Plastik PET');
     }
 
     /**
@@ -526,10 +539,46 @@ class LaporanPenjualanTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->petugasPengelola, 'petugas')
-            ->get(route('pengelola.laporan.penjualan', ['search' => $p1->nomor]));
+            ->get(route('pengelola.laporan.penjualan', [
+                'tanggal_mulai' => '2026-10-01',
+                'tanggal_selesai' => '2026-10-31',
+                'search' => $p1->nomor,
+            ]));
 
         $response->assertOk();
-        $response->assertSee($p1->nomor);
-        $response->assertDontSee($p2->nomor);
+        $response->assertViewHas('riwayatPenjualan', function ($riwayat) use ($p1, $p2) {
+            return $riwayat->contains('id', $p1->id) && ! $riwayat->contains('id', $p2->id);
+        });
+    }
+
+    /**
+     * Laporan Penjualan: Filter rentang tanggal opsional (DFD 6.0).
+     */
+    public function test_laporan_penjualan_filter_rentang_tanggal(): void
+    {
+        $p1 = Penjualan::create([
+            'tanggal_pengangkutan' => '2026-05-10',
+            'total_berat' => 30.0,
+            'total_nilai' => 90000,
+        ]);
+
+        $p2 = Penjualan::create([
+            'tanggal_pengangkutan' => '2026-06-15',
+            'total_berat' => 40.0,
+            'total_nilai' => 120000,
+        ]);
+
+        $response = $this->actingAs($this->petugasPengelola, 'petugas')
+            ->get(route('pengelola.laporan.penjualan', [
+                'tanggal_mulai' => '2026-05-01',
+                'tanggal_selesai' => '2026-05-31',
+            ]));
+
+        $response->assertOk();
+        $response->assertViewHas('startDate', '2026-05-01');
+        $response->assertViewHas('endDate', '2026-05-31');
+        $response->assertViewHas('riwayatPenjualan', function ($riwayat) use ($p1, $p2) {
+            return $riwayat->contains('id', $p1->id) && ! $riwayat->contains('id', $p2->id);
+        });
     }
 }

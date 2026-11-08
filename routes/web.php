@@ -54,7 +54,14 @@ Route::middleware('auth:petugas')->prefix('pengelola')->group(function () {
         Route::post('/pengaturan/ubah-password', [PengaturanController::class, 'updatePassword'])->name('pengaturan.password.update');
     });
 
-    // Pengelola: dashboard, nasabah, detail-sampah, laporan, penjualan, penimbangan, tambah & kelola akun
+    // Laporan & Penjualan (Read-Only: Pengelola & Ketua) FASE 7 / DFD 6.0
+    Route::middleware('jabatan:pengelola,ketua')->group(function () {
+        Route::get('/laporan', [LaporanController::class, 'index'])->name('pengelola.laporan');
+        Route::get('/laporan/download', [LaporanController::class, 'downloadCsv'])->name('pengelola.laporan.download');
+        Route::get('/laporan/penjualan', [LaporanController::class, 'penjualanIndex'])->name('pengelola.laporan.penjualan');
+    });
+
+    // Pengelola: dashboard, nasabah, detail-sampah, aksi penjualan, penimbangan, tambah & kelola akun
     Route::middleware('jabatan:pengelola')->group(function () {
         Route::get('/dashboard', function () {
             return view('dashboard.dashboard-pengelola');
@@ -71,10 +78,7 @@ Route::middleware('auth:petugas')->prefix('pengelola')->group(function () {
         Route::get('/detail-sampah/{jenis_sampah}/ubah', [JenisSampahController::class, 'edit'])->name('pengelola.detail-sampah.ubah');
         Route::put('/detail-sampah/{jenis_sampah}', [JenisSampahController::class, 'update'])->name('pengelola.detail-sampah.update');
 
-        // Laporan & Penjualan FASE 7
-        Route::get('/laporan', [LaporanController::class, 'index'])->name('pengelola.laporan');
-        Route::get('/laporan/download', [LaporanController::class, 'downloadCsv'])->name('pengelola.laporan.download');
-        Route::get('/laporan/penjualan', [LaporanController::class, 'penjualanIndex'])->name('pengelola.laporan.penjualan');
+        // Aksi Penjualan (Khusus Pengelola)
         Route::post('/penjualan', [LaporanController::class, 'storePenjualan'])->name('pengelola.penjualan.store');
         Route::put('/penjualan/{penjualan}', [LaporanController::class, 'updatePenjualan'])->name('pengelola.penjualan.update');
         Route::delete('/penjualan/{penjualan}', [LaporanController::class, 'destroyPenjualan'])->name('pengelola.penjualan.destroy');
@@ -109,26 +113,32 @@ Route::middleware('auth:petugas')->prefix('pengelola')->group(function () {
 // ROUTE BERANDA BENDAHARA & KETUA
 // Proteksi: auth:petugas + jabatan:...
 // ==========================================
-Route::middleware(['auth:petugas', 'jabatan:bendahara'])->prefix('bendahara')->group(function () {
-    Route::get('/beranda', function () {
-        return redirect()->route('bendahara.transaksi');
-    })->name('bendahara.beranda');
+Route::middleware('auth:petugas')->prefix('bendahara')->group(function () {
+    // Khusus Bendahara: transaksi, riwayat, CRUD
+    Route::middleware('jabatan:bendahara')->group(function () {
+        Route::get('/beranda', function () {
+            return redirect()->route('bendahara.transaksi');
+        })->name('bendahara.beranda');
 
-    // Transaksi Keuangan FASE 8
-    Route::get('/transaksi', [TransaksiKeuanganController::class, 'indexTambah'])->name('bendahara.transaksi');
-    Route::post('/transaksi', [TransaksiKeuanganController::class, 'store'])->name('bendahara.transaksi.store');
+        // Transaksi Keuangan FASE 8
+        Route::get('/transaksi', [TransaksiKeuanganController::class, 'indexTambah'])->name('bendahara.transaksi');
+        Route::post('/transaksi', [TransaksiKeuanganController::class, 'store'])->name('bendahara.transaksi.store');
 
-    Route::get('/riwayat', [TransaksiKeuanganController::class, 'riwayat'])->name('bendahara.riwayat');
-    Route::get('/riwayat/download', [TransaksiKeuanganController::class, 'downloadCsv'])->name('bendahara.transaksi.download');
+        Route::get('/riwayat', [TransaksiKeuanganController::class, 'riwayat'])->name('bendahara.riwayat');
+        Route::get('/riwayat/download', [TransaksiKeuanganController::class, 'downloadCsv'])->name('bendahara.transaksi.download');
 
-    Route::get('/transaksi/{transaksi}/edit', [TransaksiKeuanganController::class, 'edit'])->name('bendahara.transaksi.edit');
-    Route::put('/transaksi/{transaksi}', [TransaksiKeuanganController::class, 'update'])->name('bendahara.transaksi.update');
-    Route::delete('/transaksi/{transaksi}', [TransaksiKeuanganController::class, 'destroy'])->name('bendahara.transaksi.destroy');
+        Route::get('/transaksi/{transaksi}/edit', [TransaksiKeuanganController::class, 'edit'])->name('bendahara.transaksi.edit');
+        Route::put('/transaksi/{transaksi}', [TransaksiKeuanganController::class, 'update'])->name('bendahara.transaksi.update');
+        Route::delete('/transaksi/{transaksi}', [TransaksiKeuanganController::class, 'destroy'])->name('bendahara.transaksi.destroy');
 
-    Route::get('/transaksi/{transaksi}/lampiran', [TransaksiKeuanganController::class, 'lampiran'])->name('bendahara.transaksi.lampiran');
+        Route::get('/transaksi/{transaksi}/lampiran', [TransaksiKeuanganController::class, 'lampiran'])->name('bendahara.transaksi.lampiran');
+    });
 
-    Route::get('/laporan-keuangan', [TransaksiKeuanganController::class, 'laporan'])->name('bendahara.laporan-keuangan');
-    Route::get('/laporan-keuangan/cetak', [TransaksiKeuanganController::class, 'cetakLaporan'])->name('bendahara.laporan-keuangan.cetak');
+    // Laporan Keuangan (Read-Only: Bendahara & Ketua) DFD 6.0
+    Route::middleware('jabatan:bendahara,ketua')->group(function () {
+        Route::get('/laporan-keuangan', [TransaksiKeuanganController::class, 'laporan'])->name('bendahara.laporan-keuangan');
+        Route::get('/laporan-keuangan/cetak', [TransaksiKeuanganController::class, 'cetakLaporan'])->name('bendahara.laporan-keuangan.cetak');
+    });
 });
 
 Route::middleware('auth:petugas')->prefix('ketua')->group(function () {

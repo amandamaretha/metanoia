@@ -189,6 +189,9 @@ class LaporanController extends Controller
      */
     public function penjualanIndex(Request $request): View
     {
+        $startDate = $request->query('tanggal_mulai', now()->startOfMonth()->toDateString());
+        $endDate = $request->query('tanggal_selesai', now()->endOfMonth()->toDateString());
+
         $batasMinimumKg = (float) config('metanoia.penjualan.batas_minimum_kg', 100);
 
         // KEPUTUSAN DEFAULT: Stok = total setoran dikurangi penjualan, ditampilkan sebagai total
@@ -200,8 +203,11 @@ class LaporanController extends Controller
         $progresPersen = $batasMinimumKg > 0 ? min(100.0, round(($stokSaatIni / $batasMinimumKg) * 100, 1)) : 0.0;
         $kurangKg = max(0.0, round($batasMinimumKg - $stokSaatIni, 2));
 
-        // Query Riwayat Penjualan dengan Filter Pencarian
-        $query = Penjualan::latest('tanggal_pengangkutan')->latest('id');
+        // Query Riwayat Penjualan dengan Filter Periode & Pencarian
+        $query = Penjualan::whereDate('tanggal_pengangkutan', '>=', $startDate)
+            ->whereDate('tanggal_pengangkutan', '<=', $endDate)
+            ->latest('tanggal_pengangkutan')
+            ->latest('id');
 
         $search = $request->query('search');
         if ($search) {
@@ -219,7 +225,9 @@ class LaporanController extends Controller
             'progresPersen',
             'kurangKg',
             'riwayatPenjualan',
-            'search'
+            'search',
+            'startDate',
+            'endDate'
         ));
     }
 

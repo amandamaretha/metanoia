@@ -59,9 +59,12 @@ class TransaksiKeuanganTest extends TestCase
         $this->get(route('bendahara.riwayat'))->assertStatus(403);
         $this->get(route('bendahara.laporan-keuangan'))->assertStatus(403);
 
-        // Ketua -> 403
+        // Ketua -> 403 transaksi & riwayat, 200 untuk laporan-keuangan & cetak
         $this->actingAs($this->ketua, 'petugas');
         $this->get(route('bendahara.transaksi'))->assertStatus(403);
+        $this->get(route('bendahara.riwayat'))->assertStatus(403);
+        $this->get(route('bendahara.laporan-keuangan'))->assertOk();
+        $this->get(route('bendahara.laporan-keuangan.cetak'))->assertOk();
 
         // Bendahara -> 200
         $this->actingAs($this->bendahara, 'petugas');
