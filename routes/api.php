@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::post('/register', [AuthController::class, 'register'])->name('api.register');
+Route::post('/register', [AuthController::class, 'register'])
+    ->middleware('throttle:5,1')
+    ->name('api.register');
 Route::post('/login', [AuthController::class, 'login'])->name('api.login');
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -23,7 +25,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Alias dengan prefix /auth untuk fleksibilitas klien mobile
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register'])->name('api.auth.register');
+    Route::post('/register', [AuthController::class, 'register'])
+        ->middleware('throttle:5,1')
+        ->name('api.auth.register');
     Route::post('/login', [AuthController::class, 'login'])->name('api.auth.login');
 
     Route::middleware('auth:sanctum')->group(function () {
