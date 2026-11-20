@@ -50,7 +50,8 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Masa berlaku personal access token Sanctum: 30 hari (43200 menit)
+    'expiration' => 43200,
 
     /*
     |--------------------------------------------------------------------------

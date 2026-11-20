@@ -312,4 +312,201 @@ class AuthApiTest extends TestCase
 
         $response->assertStatus(401);
     }
+
+    /**
+     * 12. Token baru yang diterbitkan saat login dapat mengakses GET /api/me (200).
+     */
+    public function test_token_baru_bisa_mengakses_me(): void
+    {
+        $nasabah = Nasabah::create([
+            'nama' => 'Nasabah Token Baru',
+            'nik' => '3201010101020001',
+            'no_telp' => '6281234567801',
+            'alamat' => 'Jl. Baru No. 1',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $loginRes = $this->postJson('/api/login', [
+            'no_telp' => '6281234567801',
+            'password' => 'password123',
+        ]);
+        $loginRes->assertStatus(200);
+        $token = $loginRes->json('token');
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/me');
+
+        $response->assertStatus(200)
+            ->assertJsonFragment([
+                'id' => $nasabah->id,
+                'nama' => 'Nasabah Token Baru',
+            ]);
+    }
+
+    /**
+     * 13. Token berumur di bawah 30 hari (29 hari) tetap valid (200).
+     */
+    public function test_token_berumur_29_hari_tetap_valid(): void
+    {
+        $nasabah = Nasabah::create([
+            'nama' => 'Nasabah Token 29 Hari',
+            'nik' => '3201010101020002',
+            'no_telp' => '6281234567802',
+            'alamat' => 'Jl. Baru No. 2',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $token = $nasabah->createToken('test-29-days')->plainTextToken;
+
+        // Majukan waktu ke 29 hari ke depan
+        $this->travel(29)->days();
+
+        try {
+            $response = $this->withHeader('Authorization', 'Bearer '.$token)
+                ->getJson('/api/me');
+
+            $response->assertStatus(200)
+                ->assertJsonFragment([
+                    'id' => $nasabah->id,
+                ]);
+        } finally {
+            $this->travelBack();
+        }
+    }
+
+    /**
+     * 14. Token berumur lebih dari 30 hari (30 hari + 1 menit) kedaluwarsa (401 JSON).
+     */
+    public function test_token_berumur_lebih_dari_30_hari_kedaluwarsa(): void
+    {
+        $nasabah = Nasabah::create([
+            'nama' => 'Nasabah Token Expired',
+            'nik' => '3201010101020003',
+            'no_telp' => '6281234567803',
+            'alamat' => 'Jl. Baru No. 3',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $token = $nasabah->createToken('test-expired')->plainTextToken;
+
+        // Majukan waktu ke 30 hari + 1 menit
+        $this->travel(30)->days();
+        $this->travel(1)->minutes();
+
+        try {
+            $response = $this->withHeader('Authorization', 'Bearer '.$token)
+                ->getJson('/api/me');
+
+            $response->assertStatus(401)
+                ->assertJson([
+                    'message' => 'Unauthenticated.',
+                ]);
+        } finally {
+            $this->travelBack();
+        }
+    }
+
+    /**
+     * 15. Rate limiting register: 5 permintaan pertama diproses, ke-6 menghasilkan 429 dan Retry-After.
+     */
+    public function test_register_rate_limit_5_permintaan_per_menit(): void
+    {
+        $ip = '192.168.1.101';
+
+        for ($i = 1; $i <= 5; $i++) {
+            $response = $this->withServerVariables(['REMOTE_ADDR' => $ip])
+                ->postJson('/api/register', []);
+            $this->assertNotEquals(429, $response->getStatusCode());
+        }
+
+        $response6 = $this->withServerVariables(['REMOTE_ADDR' => $ip])
+            ->postJson('/api/register', []);
+
+        $response6->assertStatus(429);
+        $this->assertTrue($response6->headers->has('Retry-After'));
+    }
+
+    /**
+     * 16. Pemeriksaan apakah kedua rute register berbagi kuota throttle.
+     */
+    public function test_kedua_rute_register_berbagi_kuota_throttle(): void
+    {
+        $ip = '192.168.1.102';
+
+        for ($i = 1; $i <= 5; $i++) {
+            $response = $this->withServerVariables(['REMOTE_ADDR' => $ip])
+                ->postJson('/api/auth/register', []);
+            $this->assertNotEquals(429, $response->getStatusCode());
+        }
+
+        $response6 = $this->withServerVariables(['REMOTE_ADDR' => $ip])
+            ->postJson('/api/register', []);
+
+        $response6->assertStatus(429);
+        $this->assertTrue($response6->headers->has('Retry-After'));
+    }
+
+    /**
+     * 17. IP berbeda tidak terpengaruh oleh pembatasan throttle IP lain.
+     */
+    public function test_register_ip_berbeda_tidak_terdampak_throttle(): void
+    {
+        $ip1 = '192.168.1.103';
+        $ip2 = '192.168.1.104';
+
+        for ($i = 1; $i <= 5; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => $ip1])
+                ->postJson('/api/register', []);
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => $ip1])
+            ->postJson('/api/register', [])
+            ->assertStatus(429);
+
+        $responseIp2 = $this->withServerVariables(['REMOTE_ADDR' => $ip2])
+            ->postJson('/api/register', [
+                'nama' => 'Nasabah IP 2',
+                'nik' => '3201010101020006',
+                'no_telp' => '081234567806',
+                'alamat' => 'Jl. Bebas No. 6',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+            ]);
+
+        $responseIp2->assertStatus(201);
+    }
+
+    /**
+     * 18. Login tidak terpengaruh oleh pembatasan throttle pada rute register.
+     */
+    public function test_login_tidak_terpengaruh_oleh_throttle_register(): void
+    {
+        $ip = '192.168.1.105';
+
+        Nasabah::create([
+            'nama' => 'Nasabah Login Bebas',
+            'nik' => '3201010101020007',
+            'no_telp' => '6281234567807',
+            'alamat' => 'Jl. Bebas No. 7',
+            'password' => Hash::make('password123'),
+        ]);
+
+        for ($i = 1; $i <= 5; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => $ip])
+                ->postJson('/api/register', []);
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => $ip])
+            ->postJson('/api/register', [])
+            ->assertStatus(429);
+
+        $loginResponse = $this->withServerVariables(['REMOTE_ADDR' => $ip])
+            ->postJson('/api/login', [
+                'no_telp' => '6281234567807',
+                'password' => 'password123',
+            ]);
+
+        $loginResponse->assertStatus(200)
+            ->assertJsonStructure(['token', 'token_type', 'nasabah']);
+    }
 }
